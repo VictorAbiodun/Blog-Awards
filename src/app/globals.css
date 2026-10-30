@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/*
+ * Blog Award 2.0 design tokens (from the Figma "mixed theme").
+ * Black ground, with gold, mint, orange and grey panels.
+ */
+@theme {
+  --color-ground: #0a0a0a;
+  --color-surface: #121212;
+  --color-elevated: #1a1a1a;
+  --color-ink: #ffffff;
+  --color-muted: #a1a1aa;
+  --color-gold: #d4af37;
+  --color-mint: #a7ff9c;
+  --color-orange: #ff6831;
+  --color-grey: #c5c5c5;
+  --color-on-color: #0a0a0a;
+
+  --font-display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --font-text: "EB Garamond Variable", "EB Garamond", Georgia, serif;
+}
+
+html {
+  background-color: var(--color-ground);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: 1.125rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible keyboard focus everywhere. */
+:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 3px;
+}
