@@ -56,8 +56,10 @@ Backend (yours; see docs/BACKEND-HANDOFF.md):
 - [x] Migration 5: `audit_logs` (append-only trigger), `flags`, `announcements` (applied to remote)
 - [x] Migration 6: Atomic database RPC functions (`cast_votes` transaction, `get_wallet_balance` ledger sum) (applied to remote)
 - [x] Migration 7: Inaugural season and starter categories seed (applied to remote)
+- [x] Migration 8: PostgREST foreign key joins for `audit_logs`, `payments`, `flags` to `profiles` (applied to remote)
 - [x] Authentication & backend API implemented in `src/services/backend-api.ts` connecting Supabase
 - [x] Secure server routes for admin management, account deletion, and refunds with required reason
+- [x] Live deployment verified on Vercel and local dev environment
 - [ ] Tests proving one user cannot read or change another user's wallet (local pgTAP with Docker)
 - [ ] Rate limits on sensitive actions
 
