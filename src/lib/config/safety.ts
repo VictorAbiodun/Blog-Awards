@@ -100,10 +100,11 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
     problems.push("PAYMENT_PROVIDER=mock is not allowed in production.");
   }
 
-  const appUrl =
-    env.NEXT_PUBLIC_APP_URL ||
-    (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
-    (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined);
+  let appUrl = env.NEXT_PUBLIC_APP_URL;
+  const vercelDomain = env.VERCEL_PROJECT_PRODUCTION_URL || env.VERCEL_URL;
+  if (vercelDomain && (!appUrl || appUrl.includes("localhost"))) {
+    appUrl = `https://${vercelDomain}`;
+  }
 
   if (!present(appUrl)) {
     problems.push("NEXT_PUBLIC_APP_URL is required in production.");

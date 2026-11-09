@@ -27,11 +27,14 @@ export interface PublicConfig {
 
 /** Throws a readable error if the Supabase settings are missing or invalid. */
 export function getPublicConfig(): PublicConfig {
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : undefined) ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  let appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const vercelDomain =
+    process.env.NEXT_PUBLIC_VERCEL_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
+  if (vercelDomain && (!appUrl || appUrl.includes("localhost"))) {
+    appUrl = `https://${vercelDomain}`;
+  }
 
   const result = publicSchema.safeParse({
     NEXT_PUBLIC_APP_URL: appUrl || undefined,
