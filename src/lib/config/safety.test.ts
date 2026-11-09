@@ -58,6 +58,12 @@ describe("production safety", () => {
     expect(evaluateConfiguration(env).problems.join(" ")).toMatch(/ALLOW_SIMULATED_PAYMENTS/);
   });
 
+  it("refuses to start with demo mode switched on", () => {
+    const env = { ...safeProduction, NEXT_PUBLIC_DEMO_MODE: "true" };
+    expect(() => assertSafeConfiguration(env)).toThrow(UnsafeConfigurationError);
+    expect(evaluateConfiguration(env).problems.join(" ")).toMatch(/NEXT_PUBLIC_DEMO_MODE/);
+  });
+
   it("refuses the mock payment provider", () => {
     const env = { ...safeProduction, PAYMENT_PROVIDER: "mock" };
     expect(evaluateConfiguration(env).problems.join(" ")).toMatch(/mock/);

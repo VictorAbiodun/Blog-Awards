@@ -1,132 +1,133 @@
 # Blog Award 2.0
 
-A Nigerian music awards platform that celebrates upcoming and independent artists.
-Fans create an account, top up prepaid voting credits, and vote for approved nominees.
-Administrators add and manage every artist, season, category and winner.
+A Nigerian music awards platform that celebrates upcoming and independent artists. Fans create an
+account, top up prepaid voting credits, and vote for approved nominees. Administrators add and
+manage every artist, season, category and winner. Artists do not log in.
 
-This repository is built in stages. See [CHECKLIST.md](./CHECKLIST.md) for exactly what is
-finished and what is still to do, and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for how
-the code is organised and why.
-
-**Current stage: Level 1 (foundation) is complete.** The public homepage shell runs. Accounts,
-the wallet, voting and payments are not built yet, and nothing on the site pretends otherwise.
+**Status: the whole frontend is built.** Every screen from the Figma designs works, for phones and
+computers, on fake data (demo mode). The backend is yours to connect: see
+[docs/BACKEND-HANDOFF.md](./docs/BACKEND-HANDOFF.md). What is done and what is left is in
+[CHECKLIST.md](./CHECKLIST.md); how the code is organised is in
+[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## What you need
 
 - **Node.js 20.9 or newer** (developed on Node 22) and **npm**
 - **Git**
-- For the database (optional until Level 3): either a free Supabase project, or the
-  [Supabase CLI](https://supabase.com/docs/guides/local-development) with Docker for a local copy
+- For the backend later: a free Supabase project, or the Supabase CLI with Docker
 
 ## Install and start
 
 ```bash
 npm install
-cp .env.example .env.local     # then edit .env.local (see below)
-npm run dev                    # http://localhost:3000
+cp .env.example .env.local
+npm run dev            # http://localhost:3000
 ```
 
-The homepage works with no Supabase settings at all. You only need them once accounts arrive.
+`npm run dev` starts in **demo mode** even without `.env.local`. Nothing else is needed to click
+through the whole site.
 
-Check that the server is happy: open <http://localhost:3000/api/health>. It reports the
-environment and any configuration problems, and never shows a secret.
+## What to click (demo mode)
+
+A banner at the top says "Demo mode" and has a **Reset demo data** button. All data lives in your
+browser's local storage; nothing leaves your machine and no real money moves.
+
+| Demo account | Email | Password |
+| --- | --- | --- |
+| Fan (has a wallet and a few votes) | `ada@example.com` | `password123` |
+| Administrator | `admin@example.com` | `admin12345` |
+| Disabled account | `disabled@example.com` | `password123` |
+
+Try these:
+
+1. **Sign up**: Register, then "Check your email". Click the demo button that stands in for the email link, then log in.
+2. **Add credits**: Wallet, pick an amount, "Continue to secure checkout". A demo checkout lets you succeed or fail the payment. Credits appear only after success.
+3. **Vote**: Nominees, open an artist, choose votes, confirm. You get a receipt and your balance drops.
+4. **Edge cases**: ask for more votes than you can afford ("Not enough credits"); log out and open an artist ("Log in to vote"); as the admin, close voting and watch the fan side change to "Voting is closed".
+5. **Admin**: log in as the administrator. Add and publish an artist (it appears on the public nominees page), change the vote price, issue a refund (a written reason is required), close voting, publish winners, export a report, read the audit log.
+
+## Pages
+
+| Area | Routes |
+| --- | --- |
+| Public | `/` (home), `/nominees`, `/nominees/[slug]`, `/leaderboard`, `/contact`, `/terms`, `/privacy`, `/refunds` |
+| Accounts | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/check-email`, `/email-confirmed`, `/session-expired`, `/account-unavailable` |
+| Signed in | `/dashboard`, `/wallet`, `/settings`, `/receipts/[id]` |
+| Administrator | `/admin`, `/admin/artists`, `/admin/season`, `/admin/payments`, `/admin/suspicious`, `/admin/winners`, `/admin/audit` |
+
+## Connecting your backend
+
+Everything the screens need goes through one interface, `BlogAwardApi` (`src/services/api.ts`).
+Demo mode implements it with fake data; **you implement it for real in
+`src/services/backend-api.ts`**, then set `NEXT_PUBLIC_DEMO_MODE=false`. Until a method is
+implemented, the screen that needs it says exactly which one. The handoff document lists every
+method, the screens that use it, the security rules it must follow, a suggested database, and the
+Paystack flow.
 
 ## Scripts
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Development server with hot reload |
+| `npm run dev` | Development server (demo mode on by default) |
 | `npm run build` | Production build (needs no secrets) |
 | `npm start` | Runs the production build (runs the safety checks, see below) |
 | `npm run typecheck` | TypeScript in strict mode |
 | `npm run lint` | ESLint |
 | `npm test` | Unit and component tests (Vitest) |
-| `npm run check` | typecheck + lint + tests together. Run before every commit |
+| `npm run check` | typecheck + lint + tests. Run before every commit |
 
 ## Configuration
 
-Every setting lives in `.env.local`, which is **ignored by Git**. `.env.example` is the
-documented template and contains placeholders only. **Never put real keys in `.env.example`,
-in Git, or in a chat.**
+Settings live in `.env.local`, which Git ignores. `.env.example` is the documented template and
+holds placeholders only. **Never put real keys in `.env.example`, in Git, or in a chat.**
 
-| Variable | Where it is used | Notes |
-| --- | --- | --- |
-| `APP_ENV` | server | `development`, `test` or `production` |
-| `NEXT_PUBLIC_APP_URL` | browser + server | Public URL of the site |
-| `NEXT_PUBLIC_SUPABASE_URL` | browser + server | Safe to expose |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser + server | Safe to expose, Row Level Security protects data |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Bypasses Row Level Security |
-| `PAYMENTS_ENABLED` | server | Master switch, keep `false` until approved |
-| `PAYMENT_PROVIDER` | server | `disabled`, `mock` or `paystack` |
-| `ALLOW_SIMULATED_PAYMENTS` | server | Must be `false` in production |
-| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | browser + server | `pk_test_...` until you go live |
-| `PAYSTACK_SECRET_KEY` | **server only** | `sk_test_...` until you go live |
+| Variable | Use |
+| --- | --- |
+| `APP_ENV` | `development`, `test` or `production` |
+| `NEXT_PUBLIC_DEMO_MODE` | `true` for fake data and simulated payments; **must be `false` in production** |
+| `NEXT_PUBLIC_APP_URL` | Public URL of the site |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Safe for the browser; Row Level Security protects data |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Bypasses Row Level Security |
+| `PAYMENTS_ENABLED`, `PAYMENT_PROVIDER`, `ALLOW_SIMULATED_PAYMENTS` | Payment switches. Keep payments off until approved |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`, `PAYSTACK_SECRET_KEY` | `pk_test_` / `sk_test_` until you go live. The secret key is **server only** |
 
-A secret must never sit in a variable that starts with `NEXT_PUBLIC_`, because those are sent to
-every visitor. The safety checks below catch this mistake.
+A secret must never sit in a `NEXT_PUBLIC_` variable, because those are sent to every visitor.
 
 ## Development mode and production mode
 
-| | Development | Production |
-| --- | --- | --- |
-| Money | No real financial activity | Real credits only after a verified payment or an authorised admin adjustment |
-| Payments | Simulated funding (`mock` provider, from Level 4) | Simulated payments disabled |
-| Paystack | Off, or test keys only | Off until explicitly approved and configured |
-| Data | Free local database, seeded demo data | Real accounts, persistent database |
+**The application refuses to start in production if the settings are dangerous**
+(`src/lib/config/safety.ts`, run at server start by `src/instrumentation.ts`). For example,
+production with demo mode on, simulated payments on, the mock provider, a test or placeholder key,
+or a live key anywhere else, stops the server and lists every problem. `npm run build` also fails if
+`APP_ENV=production` and demo mode is on. Set `NEXT_PUBLIC_DEMO_MODE=false` **before** building,
+because `NEXT_PUBLIC_` values are baked in at build time.
 
-**The application refuses to start in production if the settings are dangerous.** The rules live
-in `src/lib/config/safety.ts` and run at server start (`src/instrumentation.ts`). For example,
-`APP_ENV=production` with `ALLOW_SIMULATED_PAYMENTS=true` stops the server and prints every
-problem. A server counts as production if *either* `NODE_ENV` or `APP_ENV` says so, so running a
-production build with `APP_ENV=development` does not bypass the checks.
+## Database
 
-To try a production build locally you must give it a complete, safe production configuration
-(https URLs, real Supabase values, simulated payments off). That is deliberate.
-
-## Database (Supabase / PostgreSQL)
-
-- `supabase/config.toml`: local Supabase settings (email confirmation required, passwords of at
-  least 8 characters, new tables not exposed to the API unless explicitly granted).
-- `supabase/migrations/`: the schema. **Always change the database through a new migration file,
-  never by clicking in the dashboard.**
-- `supabase/tests/database/`: pgTAP tests for the security rules.
-
-Local copy (needs Docker):
+`supabase/` holds the Supabase settings, migrations and pgTAP tests. Migration 1 creates fan
+profiles with Row Level Security. Change the database only through new migration files.
 
 ```bash
-npx supabase start        # starts a local Supabase
-npx supabase db reset     # applies every migration
-npx supabase test db      # runs the pgTAP tests
+npx supabase start && npx supabase db reset && npx supabase test db
 ```
-
-Hosted project: link it with `npx supabase link`, then `npx supabase db push`.
-
-Migration 1 creates `profiles`: one row per fan, created automatically when an account is made.
-A fan can read and edit only their own display name and avatar. They cannot read other fans'
-profiles, change their account status, or insert or delete profiles.
-
-## Security rules this project follows
-
-- Secrets stay on the server. `src/lib/config/server-env.ts` and the admin Supabase client import
-  `server-only`, so importing them from a browser component fails the build.
-- The service role key is used only in trusted server code (`src/lib/supabase/admin.ts`).
-- Row Level Security is switched on for every table that holds user data, with explicit grants.
-- Money is stored as integer kobo, never as floating-point numbers (from Level 3).
-- A browser redirect is never proof of payment (from Level 4).
 
 ## How this was tested
 
-Run in the build environment:
+- **69 unit and component tests** (`npm test`): the production safety rules, the whole demo
+  backend (ledger, voting, refunds, winners, CSV safety), validation, formatting, and form components.
+- **92 browser checks** with a real Chromium (`scripts/e2e-demo-flows.py`): sign up, email
+  confirmation, wrong password, wallet limits, failed and successful payments, voting, receipts, not
+  enough credits, voting closed, admin guards, adding artists, refunds, winners, and no sideways
+  scrolling on 16 pages at 320, 390 and 820 pixels wide. No console errors.
+- `typecheck`, `lint` and `build` pass (29 routes).
+- A production server with unsafe settings refuses to start; with safe settings it starts.
+- Migration 1 and its 13 pgTAP tests pass on PostgreSQL 16 with a stand-in for Supabase's auth schema.
 
-- 26 unit and component tests pass (`npm test`): 22 for the configuration safety rules, 4 for the homepage.
-- `npm run typecheck`, `npm run lint` and `npm run build` pass.
-- A production server was started with simulated payments on: it **refused to start** and listed
-  every problem. With safe settings it started and answered `/` and `/api/health`.
-- The homepage was loaded in a real browser at 320, 390, 820 and 1440 pixels wide with no
-  sideways scrolling and both brand fonts loaded.
-- Migration 1 and its 13 pgTAP tests pass on PostgreSQL 16, using a stand-in for Supabase's `auth`
-  schema.
+**Not yet run**: `supabase test db` against the real Supabase stack (needs Docker), any real
+backend or payment (none exists yet), and testing on real phones and screen readers.
 
-**Not yet run** (needs your machine, Docker or accounts): `supabase start` and `supabase test db`
-against the real Supabase stack, a real Supabase project, and browser end-to-end tests (Playwright).
-Treat the migration as tested in principle, and run `npx supabase test db` yourself before relying on it.
+## Notes
+
+- Artist names, standings, prices and ₦ amounts shown are **sample data**. The sample price is ₦50 per vote.
+- `terms`, `privacy` and `refunds` are **drafts**. They say what is still undecided. Have a lawyer review them before taking real money.
+- No artist photographs are included. Images come only from an administrator's upload.

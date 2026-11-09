@@ -93,6 +93,9 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
   if (isTruthy(env.ALLOW_SIMULATED_PAYMENTS)) {
     problems.push("ALLOW_SIMULATED_PAYMENTS must be false in production. Simulated payments can never create real voting credits.");
   }
+  if (isTruthy(env.NEXT_PUBLIC_DEMO_MODE)) {
+    problems.push("NEXT_PUBLIC_DEMO_MODE must be false in production. Demo mode uses fake data and simulated payments.");
+  }
   if (env.PAYMENT_PROVIDER === "mock") {
     problems.push("PAYMENT_PROVIDER=mock is not allowed in production.");
   }

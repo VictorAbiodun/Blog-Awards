@@ -4,8 +4,8 @@ import "@fontsource/bebas-neue/index.css";
 import "@fontsource-variable/eb-garamond/wght.css";
 import "./globals.css";
 
-import { SiteFooter } from "@/components/layout/SiteFooter";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { DemoBanner } from "@/components/layout/demo-banner";
+import { SessionProvider } from "@/hooks/session";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body id="top" className="min-h-svh bg-ground text-ink">
@@ -32,9 +32,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to main content
         </a>
-        <SiteHeader />
-        {children}
-        <SiteFooter />
+        <SessionProvider>
+          <DemoBanner />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );

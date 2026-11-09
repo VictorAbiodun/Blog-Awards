@@ -43,3 +43,36 @@ body {
   outline: 3px solid var(--color-gold);
   outline-offset: 3px;
 }
+
+/*
+ * Headlines that fill the space they sit in. Set --chars to the number of
+ * characters in the longest line. Bebas Neue is roughly 0.345em per character.
+ */
+.fit-heading {
+  font-size: min(9.5rem, calc((100vw - 40px) / (var(--chars) * 0.36)));
+}
+.fit-wide {
+  font-size: calc((100vw - 40px) / (var(--chars) * 0.345));
+}
+@media (min-width: 768px) {
+  .fit-heading {
+    font-size: min(15rem, calc((50vw - 48px) / (var(--chars) * 0.36)));
+  }
+  .fit-wide {
+    font-size: calc((100vw - 48px) / (var(--chars) * 0.345));
+  }
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.72);
+}
+
+/* A greeting that shrinks for longer names so it never overflows. */
+.fit-greeting {
+  font-size: min(26vw, calc((100vw - 40px) / (var(--chars) * 0.36)));
+}
+@media (min-width: 768px) {
+  .fit-greeting {
+    font-size: min(15.3vw, calc(62vw / (var(--chars) * 0.36)));
+  }
+}
