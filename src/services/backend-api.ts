@@ -42,7 +42,10 @@ async function handleApiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const errorMsg = data?.error || data?.message || res.statusText || "Request failed";
+    const errorMsg =
+      data?.error ||
+      data?.message ||
+      (res.statusText ? `${res.status} ${res.statusText}` : `Server error (${res.status})`);
     const code =
       res.status === 401
         ? "not_signed_in"

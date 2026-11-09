@@ -32,7 +32,7 @@ export function getPublicConfig(): PublicConfig {
     process.env.NEXT_PUBLIC_VERCEL_URL ||
     process.env.VERCEL_PROJECT_PRODUCTION_URL ||
     process.env.VERCEL_URL;
-  if (vercelDomain && (!appUrl || appUrl.includes("localhost"))) {
+  if (vercelDomain && (!appUrl || appUrl.includes("localhost") || appUrl.startsWith("http://"))) {
     appUrl = `https://${vercelDomain}`;
   }
 

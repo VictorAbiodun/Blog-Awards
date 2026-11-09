@@ -102,7 +102,7 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
 
   let appUrl = env.NEXT_PUBLIC_APP_URL;
   const vercelDomain = env.VERCEL_PROJECT_PRODUCTION_URL || env.VERCEL_URL;
-  if (vercelDomain && (!appUrl || appUrl.includes("localhost"))) {
+  if (vercelDomain && (!appUrl || appUrl.includes("localhost") || appUrl.startsWith("http://"))) {
     appUrl = `https://${vercelDomain}`;
   }
 
