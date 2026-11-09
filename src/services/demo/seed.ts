@@ -4,6 +4,7 @@ import type {
   AuditEntry,
   Category,
   Flag,
+  FundingRequest,
   LedgerEntry,
   Payment,
   Season,
@@ -32,6 +33,7 @@ export interface DemoState {
   season: Season;
   ledger: LedgerEntry[];
   payments: Payment[];
+  fundingRequests: FundingRequest[];
   receipts: VoteReceipt[];
   flags: Flag[];
   audit: AuditEntry[];
@@ -169,6 +171,24 @@ export function createSeedState(): DemoState {
     season,
     ledger,
     payments,
+    fundingRequests: [
+      {
+        id: "fr-1",
+        reference: "FUND-UADA-X7K2",
+        userId: "u-ada",
+        fanLabel: "Ada",
+        requestedAmountNaira: 1000,
+        actualAmountNaira: 1000,
+        expectedPoints: 20,
+        creditedPoints: 20,
+        conversionRate: 50,
+        status: "approved",
+        submittedAt: daysAgo(2),
+        approvedAt: daysAgo(2),
+        approvedBy: "u-admin",
+        createdAt: daysAgo(2),
+      },
+    ],
     receipts,
     flags,
     audit,

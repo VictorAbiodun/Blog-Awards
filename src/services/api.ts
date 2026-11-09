@@ -1,10 +1,14 @@
 import type {
+  AdminFundingOverview,
   AdminOverview,
   Artist,
   AuditEntry,
   Category,
   DashboardData,
   Flag,
+  FundingConfig,
+  FundingRequest,
+  FundingRequestStatus,
   LeaderboardRow,
   Payment,
   ReportKind,
@@ -123,6 +127,10 @@ export interface BlogAwardApi {
   // ---- Signed-in fan ------------------------------------------------------
   getDashboard(): Promise<DashboardData>;
   getWallet(): Promise<WalletData>;
+  getFundingConfig(): Promise<FundingConfig>;
+  createFundingRequest(amountNaira: number): Promise<FundingRequest>;
+  notifyPaymentMade(reference: string): Promise<FundingRequest>;
+  listMyFundingRequests(): Promise<FundingRequest[]>;
   /**
    * Starts a wallet top-up. A real backend creates a pending payment and returns
    * the provider checkout URL. A browser redirect is never proof of payment.
@@ -136,6 +144,10 @@ export interface BlogAwardApi {
 
   // ---- Administrator ------------------------------------------------------
   getAdminOverview(): Promise<AdminOverview>;
+  getAdminFundingOverview(): Promise<AdminFundingOverview>;
+  listAdminFundingRequests(filter?: "all" | FundingRequestStatus): Promise<FundingRequest[]>;
+  approveFundingRequest(input: { requestId: string; actualAmountNaira: number }): Promise<FundingRequest>;
+  rejectFundingRequest(input: { requestId: string; reason: string }): Promise<FundingRequest>;
   listAdminArtists(): Promise<Artist[]>;
   saveArtist(input: ArtistInput): Promise<Artist>;
   getAdminSeason(): Promise<{ season: Season; categories: Category[] }>;

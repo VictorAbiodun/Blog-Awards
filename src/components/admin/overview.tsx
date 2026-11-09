@@ -47,7 +47,7 @@ export function AdminOverviewView() {
               <ul className="flex flex-col gap-4">
                 {[
                   { show: state.data.openFlags > 0, title: `${state.data.openFlags} flagged activity ${state.data.openFlags === 1 ? "item" : "items"}`, detail: "Unusual patterns to review", href: "/admin/suspicious", action: "Review" },
-                  { show: state.data.pendingPayments > 0, title: `${state.data.pendingPayments} ${state.data.pendingPayments === 1 ? "payment" : "payments"} still pending`, detail: "Waiting on provider verification", href: "/admin/payments", action: "Open payments" },
+                  { show: state.data.pendingPayments > 0, title: `${state.data.pendingPayments} ${state.data.pendingPayments === 1 ? "funding request" : "funding requests"} awaiting verification`, detail: "Check OPay transfers & credit points", href: "/admin/funding", action: "Verify funding" },
                   { show: state.data.draftArtists > 0, title: `${state.data.draftArtists} ${state.data.draftArtists === 1 ? "artist is a draft" : "artists are drafts"}`, detail: "Not visible to the public yet", href: "/admin/artists", action: "Open artists" },
                 ]
                   .filter((item) => item.show)

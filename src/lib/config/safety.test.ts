@@ -112,6 +112,20 @@ describe("production safety", () => {
       NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: "pk_live_abc",
     };
     expect(evaluateConfiguration(liveKeys).problems).toEqual([]);
+
+    const opayWithoutDetails = {
+      ...safeProduction,
+      PAYMENTS_ENABLED: "true",
+      PAYMENT_PROVIDER: "opay_manual" as const,
+    };
+    expect(evaluateConfiguration(opayWithoutDetails).problems.join(" ")).toMatch(/OPAY_ACCOUNT_NAME is required/);
+
+    const opayWithDetails = {
+      ...opayWithoutDetails,
+      OPAY_ACCOUNT_NAME: "Victor Awards",
+      OPAY_ACCOUNT_NUMBER: "9012345678",
+    };
+    expect(evaluateConfiguration(opayWithDetails).problems).toEqual([]);
   });
 
   it("requires APP_ENV=production on a production server", () => {

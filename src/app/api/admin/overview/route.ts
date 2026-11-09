@@ -16,14 +16,14 @@ export async function GET() {
     const [
       { count: totalVotesCount },
       { data: paymentsData },
-      { count: pendingPaymentsCount },
+      { count: pendingFundingCount },
       { count: draftArtistsCount },
       { count: pendingFlagsCount },
       { data: auditData },
     ] = await Promise.all([
       admin.from("votes").select("*", { count: "exact", head: true }),
-      admin.from("payments").select("amount_kobo").eq("status", "verified"),
-      admin.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      admin.from("funding_requests").select("actual_amount_naira").eq("status", "approved"),
+      admin.from("funding_requests").select("*", { count: "exact", head: true }).eq("status", "pending_verification"),
       admin.from("artists").select("*", { count: "exact", head: true }).eq("status", "draft"),
       admin.from("flags").select("*", { count: "exact", head: true }).eq("status", "pending"),
       admin
@@ -34,7 +34,7 @@ export async function GET() {
     ]);
 
     const verifiedPaymentsKobo = (paymentsData ?? []).reduce(
-      (sum, p) => sum + (p.amount_kobo ?? 0),
+      (sum, p) => sum + ((p.actual_amount_naira ?? 0) * 100),
       0,
     );
 
@@ -43,7 +43,7 @@ export async function GET() {
       votesCast: totalVotesCount ?? 0,
       openFlags: pendingFlagsCount ?? 0,
       draftArtists: draftArtistsCount ?? 0,
-      pendingPayments: pendingPaymentsCount ?? 0,
+      pendingPayments: pendingFundingCount ?? 0,
       recentActions: (auditData ?? []).map((entry) => ({
         id: entry.id,
         action: entry.action,

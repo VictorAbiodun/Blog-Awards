@@ -1,11 +1,15 @@
 import { slugify } from "@/lib/format";
 import type {
+  AdminFundingOverview,
   AdminOverview,
   Artist,
   AuditEntry,
   Category,
   DashboardData,
   Flag,
+  FundingConfig,
+  FundingRequest,
+  FundingRequestStatus,
   LeaderboardRow,
   Payment,
   ReportKind,
@@ -289,12 +293,84 @@ export const demoApi: BlogAwardApi = {
     await wait();
     const state = readState();
     const user = requireUser(state);
+    const balance = balanceOf(state, user.id);
+    const requests = (state.fundingRequests || []).filter((r) => r.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return {
-      balanceKobo: balanceOf(state, user.id),
+      balancePoints: balance,
+      balanceKobo: balance,
       season: state.season,
+      fundingConfig: {
+        bankName: "OPay",
+        accountName: "Victor Awards Demo OPay",
+        accountNumber: "9012345678",
+        nairaPerPoint: 50,
+        minAmountNaira: 50,
+      },
+      fundingRequests: requests,
       payments: state.payments.filter((p) => p.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       debits: state.receipts.filter((r) => r.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     };
+  },
+
+  async getFundingConfig(): Promise<FundingConfig> {
+    await wait();
+    return {
+      bankName: "OPay",
+      accountName: "Victor Awards Demo OPay",
+      accountNumber: "9012345678",
+      nairaPerPoint: 50,
+      minAmountNaira: 50,
+    };
+  },
+
+  async createFundingRequest(amountNaira: number): Promise<FundingRequest> {
+    await wait();
+    return mutate((state) => {
+      const user = requireConfirmed(state);
+      const rate = 50;
+      if (!amountNaira || amountNaira < rate || amountNaira % rate !== 0) {
+        throw new ApiError("validation", `Amount must be at least ₦${rate} and a multiple of ₦${rate}.`);
+      }
+      const shortId = user.id.replace(/-/g, "").substring(0, 6).toUpperCase();
+      const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const reference = `FUND-${shortId}-${randomSuffix}`;
+      const expectedPoints = Math.floor(amountNaira / rate);
+      const req: FundingRequest = {
+        id: newId("fr"),
+        reference,
+        userId: user.id,
+        fanLabel: user.displayName,
+        requestedAmountNaira: amountNaira,
+        expectedPoints,
+        conversionRate: rate,
+        status: "awaiting_payment",
+        createdAt: nowIso(),
+      };
+      if (!state.fundingRequests) state.fundingRequests = [];
+      state.fundingRequests.unshift(req);
+      return req;
+    });
+  },
+
+  async notifyPaymentMade(reference: string): Promise<FundingRequest> {
+    await wait();
+    return mutate((state) => {
+      const user = requireConfirmed(state);
+      if (!state.fundingRequests) state.fundingRequests = [];
+      const req = state.fundingRequests.find((r) => r.reference === reference && r.userId === user.id);
+      if (!req) throw new ApiError("not_found", "Funding request not found.");
+      if (req.status === "approved") throw new ApiError("validation", "This request is already approved.");
+      req.status = "pending_verification";
+      req.submittedAt = nowIso();
+      return req;
+    });
+  },
+
+  async listMyFundingRequests(): Promise<FundingRequest[]> {
+    await wait();
+    const state = readState();
+    const user = requireUser(state);
+    return (state.fundingRequests || []).filter((r) => r.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 
   async startTopUp(amountKobo): Promise<TopUpStart> {
@@ -421,6 +497,80 @@ export const demoApi: BlogAwardApi = {
       pendingPayments: state.payments.filter((p) => p.status === "pending").length,
       recentActions: state.audit.slice(0, 4),
     };
+  },
+
+  async getAdminFundingOverview(): Promise<AdminFundingOverview> {
+    await wait();
+    const state = readState();
+    requireAdmin(state);
+    const requests = state.fundingRequests || [];
+    const approved = requests.filter((r) => r.status === "approved");
+    return {
+      pendingCount: requests.filter((r) => r.status === "pending_verification").length,
+      approvedCount: approved.length,
+      rejectedCount: requests.filter((r) => r.status === "rejected").length,
+      totalPointsCredited: approved.reduce((sum, r) => sum + (r.creditedPoints || 0), 0),
+      totalNairaReceived: approved.reduce((sum, r) => sum + (r.actualAmountNaira || 0), 0),
+    };
+  },
+
+  async listAdminFundingRequests(filter?: "all" | FundingRequestStatus): Promise<FundingRequest[]> {
+    await wait();
+    const state = readState();
+    requireAdmin(state);
+    const requests = state.fundingRequests || [];
+    if (!filter || filter === "all") return requests;
+    return requests.filter((r) => r.status === filter);
+  },
+
+  async approveFundingRequest(input: { requestId: string; actualAmountNaira: number }): Promise<FundingRequest> {
+    await wait();
+    return mutate((state) => {
+      const admin = requireAdmin(state);
+      const requests = state.fundingRequests || [];
+      const req = requests.find((r) => r.id === input.requestId);
+      if (!req) throw new ApiError("not_found", "Funding request not found.");
+      if (req.status === "approved") throw new ApiError("validation", "This request is already approved.");
+      const points = Math.floor(input.actualAmountNaira / (req.conversionRate || 50));
+      if (points <= 0) throw new ApiError("validation", "Received amount corresponds to 0 points.");
+      req.status = "approved";
+      req.actualAmountNaira = input.actualAmountNaira;
+      req.creditedPoints = points;
+      req.approvedAt = nowIso();
+      req.approvedBy = admin.id;
+
+      // Credit ledger
+      state.ledger.unshift({
+        id: newId("lg"),
+        userId: req.userId,
+        type: "top_up",
+        amountKobo: points,
+        relatedId: req.reference,
+        description: `OPay Wallet Funding (${points} points)`,
+        createdAt: nowIso(),
+      });
+
+      audit(state, `Approved funding ${req.reference} (${points} points credited)`);
+      return req;
+    });
+  },
+
+  async rejectFundingRequest(input: { requestId: string; reason: string }): Promise<FundingRequest> {
+    await wait();
+    return mutate((state) => {
+      const admin = requireAdmin(state);
+      const requests = state.fundingRequests || [];
+      const req = requests.find((r) => r.id === input.requestId);
+      if (!req) throw new ApiError("not_found", "Funding request not found.");
+      if (req.status === "approved") throw new ApiError("validation", "Approved request cannot be rejected.");
+      req.status = "rejected";
+      req.rejectionReason = input.reason;
+      req.approvedAt = nowIso();
+      req.approvedBy = admin.id;
+
+      audit(state, `Rejected funding ${req.reference}: ${input.reason}`);
+      return req;
+    });
   },
 
   async listAdminArtists() {

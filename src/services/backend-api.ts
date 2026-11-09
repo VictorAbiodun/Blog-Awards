@@ -1,11 +1,15 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type {
+  AdminFundingOverview,
   AdminOverview,
   Artist,
   AuditEntry,
   Category,
   DashboardData,
   Flag,
+  FundingConfig,
+  FundingRequest,
+  FundingRequestStatus,
   LeaderboardRow,
   Payment,
   ReportKind,
@@ -423,16 +427,29 @@ export const backendApi: BlogAwardApi = {
     if (sessionRes.status !== "signedIn") throw new ApiError("not_signed_in", "You must be signed in.");
     const user = sessionRes.user;
 
-    const [season, { data: balanceData }, { data: payments }, { data: receipts }] = await Promise.all([
+    const [season, { data: balanceData }, { data: payments }, { data: receipts }, fundingConfig, fundingRequests] = await Promise.all([
       this.getSeason(),
       supabase.rpc("get_wallet_balance", { p_user_id: user.id }),
       supabase.from("payments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("votes").select("*, artists(name, slug), categories(name)").eq("user_id", user.id).order("created_at", { ascending: false }),
+      this.getFundingConfig().catch(() => ({
+        bankName: "OPay",
+        accountName: "Blog Award Foundation",
+        accountNumber: "9012345678",
+        nairaPerPoint: 50,
+        minAmountNaira: 50,
+      })),
+      this.listMyFundingRequests().catch(() => []),
     ]);
 
+    const points = typeof balanceData === "number" ? balanceData : 0;
+
     return {
-      balanceKobo: typeof balanceData === "number" ? balanceData : 0,
+      balancePoints: points,
+      balanceKobo: points,
       season,
+      fundingConfig,
+      fundingRequests,
       payments: (payments ?? []).map((p) => ({
         id: p.id,
         reference: p.reference,
@@ -457,6 +474,30 @@ export const backendApi: BlogAwardApi = {
         createdAt: r.created_at,
       })),
     };
+  },
+
+  async getFundingConfig(): Promise<FundingConfig> {
+    return handleApiFetch<FundingConfig>("/api/wallet/config");
+  },
+
+  async createFundingRequest(amountNaira: number): Promise<FundingRequest> {
+    return handleApiFetch<FundingRequest>("/api/wallet/funding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amountNaira }),
+    });
+  },
+
+  async notifyPaymentMade(reference: string): Promise<FundingRequest> {
+    return handleApiFetch<FundingRequest>("/api/wallet/funding/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference }),
+    });
+  },
+
+  async listMyFundingRequests(): Promise<FundingRequest[]> {
+    return handleApiFetch<FundingRequest[]>("/api/wallet/funding");
   },
 
   async startTopUp(amountKobo: number): Promise<TopUpStart> {
@@ -541,6 +582,31 @@ export const backendApi: BlogAwardApi = {
   // ---- Administrator ------------------------------------------------------
   async getAdminOverview(): Promise<AdminOverview> {
     return handleApiFetch<AdminOverview>("/api/admin/overview");
+  },
+
+  async getAdminFundingOverview(): Promise<AdminFundingOverview> {
+    return handleApiFetch<AdminFundingOverview>("/api/admin/funding/overview");
+  },
+
+  async listAdminFundingRequests(filter?: "all" | FundingRequestStatus): Promise<FundingRequest[]> {
+    const url = filter && filter !== "all" ? `/api/admin/funding/requests?filter=${filter}` : "/api/admin/funding/requests";
+    return handleApiFetch<FundingRequest[]>(url);
+  },
+
+  async approveFundingRequest(input: { requestId: string; actualAmountNaira: number }): Promise<FundingRequest> {
+    return handleApiFetch<FundingRequest>("/api/admin/funding/approve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  },
+
+  async rejectFundingRequest(input: { requestId: string; reason: string }): Promise<FundingRequest> {
+    return handleApiFetch<FundingRequest>("/api/admin/funding/reject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
   },
 
   async listAdminArtists(): Promise<Artist[]> {

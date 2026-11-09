@@ -84,6 +84,39 @@ export interface Payment {
   createdAt: string;
 }
 
+export type FundingRequestStatus =
+  | "awaiting_payment"
+  | "pending_verification"
+  | "approved"
+  | "rejected"
+  | "expired";
+
+export interface FundingRequest {
+  id: string;
+  reference: string;
+  userId: string;
+  fanLabel: string;
+  requestedAmountNaira: number;
+  actualAmountNaira?: number;
+  expectedPoints: number;
+  creditedPoints?: number;
+  conversionRate: number;
+  status: FundingRequestStatus;
+  rejectionReason?: string;
+  submittedAt?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+}
+
+export interface FundingConfig {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  nairaPerPoint: number;
+  minAmountNaira: number;
+}
+
 export interface VoteReceipt {
   id: string;
   receiptNo: string;
@@ -148,10 +181,21 @@ export interface DashboardData {
 }
 
 export interface WalletData {
+  balancePoints?: number;
   balanceKobo: number;
   season: Season;
+  fundingConfig?: FundingConfig;
+  fundingRequests?: FundingRequest[];
   payments: Payment[];
   debits: VoteReceipt[];
+}
+
+export interface AdminFundingOverview {
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  totalPointsCredited: number;
+  totalNairaReceived: number;
 }
 
 export interface AdminOverview {

@@ -9,9 +9,10 @@ import { useSession } from "@/hooks/session";
 
 const nav = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/funding", label: "Wallet Funding" },
   { href: "/admin/artists", label: "Artists" },
   { href: "/admin/season", label: "Season & rules" },
-  { href: "/admin/payments", label: "Payments & wallets" },
+  { href: "/admin/payments", label: "Archived Payments" },
   { href: "/admin/suspicious", label: "Suspicious activity" },
   { href: "/admin/winners", label: "Winners & reports" },
   { href: "/admin/audit", label: "Audit log" },

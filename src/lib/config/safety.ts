@@ -9,7 +9,7 @@
  */
 
 export type AppEnvironment = "development" | "test" | "production";
-export type PaymentProvider = "disabled" | "mock" | "paystack";
+export type PaymentProvider = "disabled" | "mock" | "paystack" | "opay_manual";
 
 export type RawEnv = Record<string, string | undefined>;
 
@@ -21,7 +21,7 @@ export interface ConfigurationReport {
 }
 
 const APP_ENVIRONMENTS: readonly string[] = ["development", "test", "production"];
-const PAYMENT_PROVIDERS: readonly string[] = ["disabled", "mock", "paystack"];
+const PAYMENT_PROVIDERS: readonly string[] = ["disabled", "mock", "paystack", "opay_manual"];
 const TRUTHY = new Set(["true", "1", "yes", "on"]);
 const PLACEHOLDER_PATTERN = /(your[-_]|replace[-_]?me|changeme|placeholder|xxxx)/i;
 
@@ -147,17 +147,25 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
   }
 
   if (isTruthy(env.PAYMENTS_ENABLED)) {
-    if (env.PAYMENT_PROVIDER !== "paystack") {
-      problems.push("PAYMENTS_ENABLED=true in production requires PAYMENT_PROVIDER=paystack.");
-    }
-    if (!present(env.PAYSTACK_SECRET_KEY) || !env.PAYSTACK_SECRET_KEY.startsWith("sk_live_")) {
-      problems.push("Production payments require a live Paystack secret key (sk_live_...).");
-    }
-    if (
-      !present(env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) ||
-      !env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY.startsWith("pk_live_")
-    ) {
-      problems.push("Production payments require a live Paystack public key (pk_live_...).");
+    if (env.PAYMENT_PROVIDER === "paystack") {
+      if (!present(env.PAYSTACK_SECRET_KEY) || !env.PAYSTACK_SECRET_KEY.startsWith("sk_live_")) {
+        problems.push("Production payments require a live Paystack secret key (sk_live_...).");
+      }
+      if (
+        !present(env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) ||
+        !env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY.startsWith("pk_live_")
+      ) {
+        problems.push("Production payments require a live Paystack public key (pk_live_...).");
+      }
+    } else if (env.PAYMENT_PROVIDER === "opay_manual") {
+      if (!present(env.OPAY_ACCOUNT_NAME) || PLACEHOLDER_PATTERN.test(env.OPAY_ACCOUNT_NAME)) {
+        problems.push("OPAY_ACCOUNT_NAME is required in production when PAYMENT_PROVIDER=opay_manual.");
+      }
+      if (!present(env.OPAY_ACCOUNT_NUMBER) || PLACEHOLDER_PATTERN.test(env.OPAY_ACCOUNT_NUMBER)) {
+        problems.push("OPAY_ACCOUNT_NUMBER is required in production when PAYMENT_PROVIDER=opay_manual.");
+      }
+    } else {
+      problems.push("PAYMENTS_ENABLED=true in production requires PAYMENT_PROVIDER=opay_manual or PAYMENT_PROVIDER=paystack.");
     }
   }
 }
