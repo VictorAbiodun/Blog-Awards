@@ -10,8 +10,10 @@ import type {
   FundingRequest,
   FundingRequestStatus,
   LeaderboardRow,
+  ManagedUser,
   Payment,
   ReportKind,
+  Role,
   Season,
   Session,
   TopUpStart,
@@ -164,4 +166,8 @@ export interface BlogAwardApi {
   publishWinner(categoryId: string): Promise<Winner>;
   /** Returns CSV text. Must never include passwords, secret keys or card data. */
   exportReport(kind: ReportKind): Promise<string>;
+
+  // ---- Super Admin / Role Management --------------------------------------
+  listAdminUsers(): Promise<ManagedUser[]>;
+  setUserRole(input: { targetUserId: string; role: "fan" | "admin" }): Promise<{ userId: string; role: Role }>;
 }

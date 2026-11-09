@@ -44,11 +44,34 @@ export async function requireServerAdmin() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (roleError || roleRow?.role !== "admin") {
+    if (roleError || (roleRow?.role !== "admin" && roleRow?.role !== "super_admin")) {
       return { ok: false as const, error: "Access denied. Administrator privileges required.", status: 403, user };
     }
 
-    return { ok: true as const, user };
+    return { ok: true as const, user, role: roleRow.role as "admin" | "super_admin" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return { ok: false as const, error: message, status: 500, user: null };
+  }
+}
+
+export async function requireServerSuperAdmin() {
+  try {
+    const adminResult = await requireServerAdmin();
+    if (!adminResult.ok) {
+      return adminResult;
+    }
+
+    if (adminResult.role !== "super_admin") {
+      return {
+        ok: false as const,
+        error: "Access denied. Only the Super Administrator can perform this action.",
+        status: 403,
+        user: adminResult.user,
+      };
+    }
+
+    return { ok: true as const, user: adminResult.user, role: "super_admin" as const };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return { ok: false as const, error: message, status: 500, user: null };

@@ -11,8 +11,10 @@ import type {
   FundingRequest,
   FundingRequestStatus,
   LeaderboardRow,
+  ManagedUser,
   Payment,
   ReportKind,
+  Role,
   Season,
   Session,
   TopUpStart,
@@ -91,7 +93,7 @@ export const backendApi: BlogAwardApi = {
       id: authUser.id,
       email: authUser.email ?? "",
       displayName: profile?.display_name ?? authUser.user_metadata?.display_name ?? "Fan",
-      role: (roleRow?.role as "fan" | "admin") ?? "fan",
+      role: (roleRow?.role as Role) ?? "fan",
       emailConfirmed: Boolean(authUser.email_confirmed_at),
       status: (profile?.account_status as "active" | "disabled") ?? "active",
       createdAt: authUser.created_at,
@@ -151,7 +153,7 @@ export const backendApi: BlogAwardApi = {
       id: authUser.id,
       email: authUser.email ?? email,
       displayName: profile?.display_name ?? authUser.user_metadata?.display_name ?? "Fan",
-      role: (roleRow?.role as "fan" | "admin") ?? "fan",
+      role: (roleRow?.role as Role) ?? "fan",
       emailConfirmed: Boolean(authUser.email_confirmed_at),
       status: "active",
       createdAt: authUser.created_at,
@@ -207,7 +209,7 @@ export const backendApi: BlogAwardApi = {
       id: authUser.id,
       email: authUser.email ?? "",
       displayName: displayName.trim(),
-      role: (roleRow?.role as "fan" | "admin") ?? "fan",
+      role: (roleRow?.role as Role) ?? "fan",
       emailConfirmed: Boolean(authUser.email_confirmed_at),
       status: "active",
       createdAt: authUser.created_at,
@@ -701,5 +703,17 @@ export const backendApi: BlogAwardApi = {
     const res = await fetch(`/api/admin/report?kind=${encodeURIComponent(kind)}`);
     if (!res.ok) throw new ApiError("unknown", "Failed to export report.");
     return res.text();
+  },
+
+  async listAdminUsers(): Promise<ManagedUser[]> {
+    return handleApiFetch<ManagedUser[]>("/api/admin/users");
+  },
+
+  async setUserRole(input: { targetUserId: string; role: "fan" | "admin" }): Promise<{ userId: string; role: Role }> {
+    return handleApiFetch<{ userId: string; role: Role }>("/api/admin/users/role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
   },
 };

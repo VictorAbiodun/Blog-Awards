@@ -16,7 +16,9 @@ export function RequireAuth({ children, admin = false }: { children: ReactNode; 
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAdmin = session.status === "signedIn" && session.user.role === "admin";
+  const isAdmin =
+    session.status === "signedIn" &&
+    (session.user.role === "admin" || session.user.role === "super_admin");
   const allowed = session.status === "signedIn" && (!admin || isAdmin);
 
   useEffect(() => {

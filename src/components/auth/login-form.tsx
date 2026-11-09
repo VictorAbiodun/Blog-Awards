@@ -38,7 +38,12 @@ export function LoginForm() {
     try {
       const user = await api.login(parsed.data);
       refresh();
-      router.replace(safeNext(params.get("next"), user.role === "admin" ? "/admin" : "/dashboard"));
+      router.replace(
+        safeNext(
+          params.get("next"),
+          user.role === "admin" || user.role === "super_admin" ? "/admin" : "/dashboard"
+        )
+      );
     } catch (error) {
       if (error instanceof ApiError && error.code === "account_unavailable") {
         router.replace("/account-unavailable");

@@ -3,7 +3,7 @@
  * Money is ALWAYS integer kobo (100 kobo = NGN 1). Never floating point.
  */
 
-export type Role = "fan" | "admin";
+export type Role = "fan" | "admin" | "super_admin";
 export type AccountStatus = "active" | "disabled";
 
 export interface User {
@@ -13,6 +13,14 @@ export interface User {
   role: Role;
   emailConfirmed: boolean;
   status: AccountStatus;
+  createdAt: string;
+}
+
+export interface ManagedUser {
+  id: string;
+  email: string;
+  displayName: string;
+  role: Role;
   createdAt: string;
 }
 

@@ -56,7 +56,9 @@ export function AppHeader() {
   const { session, signOut } = useSession();
   const balance = useBalance();
   const name = session.status === "signedIn" ? session.user.displayName : "";
-  const isAdmin = session.status === "signedIn" && session.user.role === "admin";
+  const isAdmin =
+    session.status === "signedIn" &&
+    (session.user.role === "admin" || session.user.role === "super_admin");
 
   return (
     <>

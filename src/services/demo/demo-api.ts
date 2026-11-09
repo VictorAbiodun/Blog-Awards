@@ -11,8 +11,10 @@ import type {
   FundingRequest,
   FundingRequestStatus,
   LeaderboardRow,
+  ManagedUser,
   Payment,
   ReportKind,
+  Role,
   Season,
   Session,
   TopUpStart,
@@ -77,7 +79,13 @@ function requireConfirmed(state: DemoState): DemoUserRecord {
 
 function requireAdmin(state: DemoState): DemoUserRecord {
   const user = requireUser(state);
-  if (user.role !== "admin") throw new ApiError("forbidden", "Only administrators can do that.");
+  if (user.role !== "admin" && user.role !== "super_admin") throw new ApiError("forbidden", "Only administrators can do that.");
+  return user;
+}
+
+function requireSuperAdmin(state: DemoState): DemoUserRecord {
+  const user = requireUser(state);
+  if (user.role !== "super_admin") throw new ApiError("forbidden", "Only the Super Administrator can do that.");
   return user;
 }
 
@@ -784,5 +792,33 @@ export const demoApi: BlogAwardApi = {
       return csv([["receipt", "artist", "category", "votes", "total_naira", "created_at"], ...state.receipts.map((r) => [r.receiptNo, r.artistName, r.categoryName, r.votes, r.totalKobo / 100, r.createdAt])]);
     }
     return csv([["action", "actor", "reason", "created_at"], ...state.audit.map((a) => [a.action, a.actor, a.reason ?? "", a.createdAt])]);
+  },
+
+  async listAdminUsers(): Promise<ManagedUser[]> {
+    await wait();
+    const state = readState();
+    requireAdmin(state);
+    return state.users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      role: u.role,
+      createdAt: u.createdAt,
+    }));
+  },
+
+  async setUserRole({ targetUserId, role }: { targetUserId: string; role: "fan" | "admin" }): Promise<{ userId: string; role: Role }> {
+    await wait();
+    return mutate((state) => {
+      requireSuperAdmin(state);
+      const target = state.users.find((u) => u.id === targetUserId);
+      if (!target) throw new ApiError("not_found", "User not found.");
+      if (target.role === "super_admin") {
+        throw new ApiError("forbidden", "The Super Administrator role cannot be altered.");
+      }
+      target.role = role;
+      audit(state, `${role === "admin" ? "Promoted" : "Demoted"} user ${target.email} to ${role}`);
+      return { userId: target.id, role: target.role };
+    });
   },
 };

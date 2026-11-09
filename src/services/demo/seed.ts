@@ -7,6 +7,7 @@ import type {
   FundingRequest,
   LedgerEntry,
   Payment,
+  Role,
   Season,
   VoteReceipt,
   Winner,
@@ -16,7 +17,7 @@ export interface DemoUserRecord {
   id: string;
   email: string;
   displayName: string;
-  role: "fan" | "admin";
+  role: Role;
   emailConfirmed: boolean;
   status: "active" | "disabled";
   createdAt: string;
@@ -163,6 +164,7 @@ export function createSeedState(): DemoState {
     users: [
       { id: "u-ada", email: DEMO_FAN.email, password: DEMO_FAN.password, displayName: "Ada", role: "fan", emailConfirmed: true, status: "active", createdAt: daysAgo(30) },
       { id: "u-admin", email: DEMO_ADMIN.email, password: DEMO_ADMIN.password, displayName: "Admin", role: "admin", emailConfirmed: true, status: "active", createdAt: daysAgo(60) },
+      { id: "u-superadmin", email: "uchihavictor593@gmail.com", password: "password123", displayName: "Victor (Super Admin)", role: "super_admin", emailConfirmed: true, status: "active", createdAt: daysAgo(90) },
       { id: "u-disabled", email: "disabled@example.com", password: "password123", displayName: "Disabled Fan", role: "fan", emailConfirmed: true, status: "disabled", createdAt: daysAgo(40) },
     ],
     session: null,
