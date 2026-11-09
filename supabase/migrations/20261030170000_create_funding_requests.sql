@@ -298,3 +298,4 @@ comment on function public.reject_funding_request is
   'Atomically rejects a manual funding request with a documented reason and writes audit record.';
 
 grant execute on function public.reject_funding_request(uuid, text, uuid) to authenticated;
+

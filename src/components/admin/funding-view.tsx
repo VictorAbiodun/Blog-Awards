@@ -56,6 +56,25 @@ export function AdminFundingView() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [notificationState, setNotificationState] = useState<string>(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      return Notification.permission;
+    }
+    return "default";
+  });
+
+  function enableNotifications() {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      Notification.requestPermission().then((perm) => {
+        setNotificationState(perm);
+        if (perm === "granted") {
+          new Notification("Desktop Push Alerts Enabled", {
+            body: "You will receive instant alerts whenever a user notifies an OPay payment.",
+          });
+        }
+      });
+    }
+  }
 
   function openVerification(req: FundingRequest) {
     setSelectedRequest(req);
@@ -152,6 +171,22 @@ export function AdminFundingView() {
   return (
     <AdminPage title="Wallet Funding Management">
       {notice ? <Notice tone="info">{notice}</Notice> : null}
+
+      {notificationState !== "granted" ? (
+        <div className="flex flex-col gap-2 rounded bg-gold/15 border border-gold p-4 text-base sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold">Enable Desktop Payment Alerts</p>
+            <p className="text-sm text-muted">Get notified on your device the moment a user submits an OPay payment notification.</p>
+          </div>
+          <button
+            type="button"
+            onClick={enableNotifications}
+            className="w-fit rounded bg-gold px-4 py-2 text-sm font-bold text-on-color transition hover:opacity-90"
+          >
+            Turn On Alerts
+          </button>
+        </div>
+      ) : null}
 
       {/* Overview Cards */}
       <section aria-label="Funding overview metrics" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

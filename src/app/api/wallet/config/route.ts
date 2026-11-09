@@ -18,8 +18,8 @@ export async function GET() {
 
     return NextResponse.json({
       bankName: process.env.OPAY_BANK_NAME || "OPay",
-      accountName: process.env.OPAY_ACCOUNT_NAME || "Victor Awards OPay",
-      accountNumber: process.env.OPAY_ACCOUNT_NUMBER || "9012345678",
+      accountName: process.env.OPAY_ACCOUNT_NAME || "Abiodun Victor Iyanuoluwa",
+      accountNumber: process.env.OPAY_ACCOUNT_NUMBER || "9159151577",
       nairaPerPoint: Number.isFinite(nairaPerPoint) && nairaPerPoint > 0 ? nairaPerPoint : 50,
       minAmountNaira: nairaPerPoint > 0 ? nairaPerPoint : 50,
     });
@@ -28,3 +28,4 @@ export async function GET() {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

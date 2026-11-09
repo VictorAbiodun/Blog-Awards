@@ -50,8 +50,8 @@ export function WalletView() {
 
   const config: FundingConfig = state.data.fundingConfig ?? {
     bankName: "OPay",
-    accountName: "Victor Awards OPay",
-    accountNumber: "9012345678",
+    accountName: "Abiodun Victor Iyanuoluwa",
+    accountNumber: "9159151577",
     nairaPerPoint: 50,
     minAmountNaira: 50,
   };

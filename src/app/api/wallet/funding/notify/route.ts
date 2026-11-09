@@ -67,6 +67,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateErr?.message || "Failed to notify payment." }, { status: 500 });
     }
 
+    // Push notification to administrator via flags monitoring
+    const fanLabel = updated.profiles?.display_name ?? `User (${user.id.slice(0, 6)})`;
+    await admin.from("flags").insert({
+      user_id: user.id,
+      flag_type: "payment_notification",
+      severity: "medium",
+      description: `Payment notification: ${fanLabel} reported OPay transfer of ₦${updated.requested_amount_naira.toLocaleString()} (${updated.expected_points} pts). Reference: ${updated.reference}.`,
+      status: "pending",
+    });
+
     return NextResponse.json({
       id: updated.id,
       reference: updated.reference,
@@ -89,3 +99,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

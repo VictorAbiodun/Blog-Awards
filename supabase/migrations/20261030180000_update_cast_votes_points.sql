@@ -190,3 +190,4 @@ comment on function public.cast_votes is
   'Atomically executes a vote transaction in points, deducting from wallet_ledger and recording audit trail.';
 
 grant execute on function public.cast_votes(text, integer) to authenticated;
+

@@ -12,6 +12,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
     css: false,
+    fileParallelism: false,
     env: { NEXT_PUBLIC_DEMO_MODE: "true" },
   },
 });
