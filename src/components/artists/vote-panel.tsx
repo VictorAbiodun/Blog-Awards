@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { Button, LinkButton } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { ChoiceTile, ErrorBlock, LoadingBlock, Notice, StatusPanel } from "@/components/ui/feedback";
+import { Field } from "@/components/ui/field";
 import { useSession } from "@/hooks/session";
 import { useAsync } from "@/hooks/use-async";
 import { VOTE_COUNT_CHOICES } from "@/lib/constants";
@@ -115,7 +116,10 @@ function CastPanel({
 }) {
   const loadWallet = useCallback(() => api.getWallet(), []);
   const { state, reload, refresh } = useAsync(loadWallet);
+  const [mode, setMode] = useState<"preset" | "custom">("preset");
   const [votes, setVotes] = useState<number>(3);
+  const [customText, setCustomText] = useState<string>("");
+  const [customError, setCustomError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -124,15 +128,79 @@ function CastPanel({
   if (state.status === "error") return <ErrorBlock error={state.error} onRetry={reload} />;
 
   const balance = state.data.balanceKobo;
-  const total = votes * season.votePriceKobo;
-  const enough = balance >= total;
-  const affordable = [...VOTE_COUNT_CHOICES].reverse().find((n) => n * season.votePriceKobo <= balance);
+
+  function handleCustomInput(raw: string) {
+    setCustomText(raw);
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setCustomError("Enter the number of votes you want to cast.");
+      return;
+    }
+    const num = Number(trimmed);
+    if (!Number.isInteger(num)) {
+      setCustomError("Please enter a whole number of votes.");
+      return;
+    }
+    if (num < 1) {
+      setCustomError("Choose at least 1 vote.");
+      return;
+    }
+    if (num > 100) {
+      setCustomError("You can cast at most 100 votes at a time.");
+      return;
+    }
+    setCustomError(null);
+    setVotes(num);
+  }
+
+  function selectPreset(n: number) {
+    setMode("preset");
+    setVotes(n);
+    setCustomText("");
+    setCustomError(null);
+  }
+
+  function selectCustom() {
+    setMode("custom");
+    if (!customText) {
+      setCustomText(String(votes));
+      handleCustomInput(String(votes));
+    }
+  }
+
+  const hasInvalidCustom = mode === "custom" && customError !== null;
+  const effectiveVotes = hasInvalidCustom ? 0 : votes;
+  const total = effectiveVotes * season.votePriceKobo;
+  const enough = balance >= total && effectiveVotes > 0;
+  const maxAffordableVotes = Math.min(100, Math.floor(balance / season.votePriceKobo));
+  const affordablePreset = [...VOTE_COUNT_CHOICES].reverse().find((n) => n * season.votePriceKobo <= balance);
+
+  function chooseFewerVotes() {
+    if (affordablePreset) {
+      selectPreset(affordablePreset);
+    } else if (maxAffordableVotes > 0) {
+      setMode("custom");
+      setVotes(maxAffordableVotes);
+      setCustomText(String(maxAffordableVotes));
+      setCustomError(null);
+    }
+  }
+
+  function chooseMaxAffordable() {
+    if (maxAffordableVotes > 0) {
+      setMode("custom");
+      setVotes(maxAffordableVotes);
+      setCustomText(String(maxAffordableVotes));
+      setCustomError(null);
+    }
+  }
 
   async function confirm() {
+    if (!enough || effectiveVotes <= 0) return;
     setBusy(true);
     setProblem(null);
     try {
-      const receipt = await api.castVotes({ artistSlug: artist.slug, votes });
+      const receipt = await api.castVotes({ artistSlug: artist.slug, votes: effectiveVotes });
       setConfirming(false);
       onDone(receipt.id);
     } catch (error) {
@@ -157,21 +225,69 @@ function CastPanel({
     <div id="vote" className="scroll-mt-6 flex flex-col gap-5 bg-elevated p-5 md:p-7">
       <h2 className="text-[28px] font-bold leading-[1.1] md:text-[32px]">Cast your votes</h2>
 
-      <div role="group" aria-label="Number of votes" className="grid grid-cols-4 gap-2">
+      <div role="group" aria-label="Number of votes" className="grid grid-cols-3 gap-2 sm:grid-cols-5">
         {VOTE_COUNT_CHOICES.map((n) => (
-          <ChoiceTile key={n} selected={votes === n} onClick={() => setVotes(n)} sub={n === 1 ? "vote" : "votes"}>
+          <ChoiceTile
+            key={n}
+            selected={mode === "preset" && votes === n}
+            onClick={() => selectPreset(n)}
+            sub={n === 1 ? "vote" : "votes"}
+          >
             {n}
           </ChoiceTile>
         ))}
+        <button
+          type="button"
+          aria-pressed={mode === "custom"}
+          onClick={selectCustom}
+          className={`flex min-h-20 flex-col items-center justify-center p-2 text-center transition-colors md:min-h-24 ${
+            mode === "custom" ? "bg-gold text-on-color" : "bg-ground text-ink"
+          }`}
+        >
+          <span className="font-display text-2xl font-bold leading-none md:text-3xl">Custom</span>
+          <span className="text-xs font-semibold text-muted">
+            {mode === "custom" ? "selected" : "enter any"}
+          </span>
+        </button>
       </div>
 
+      <Field
+        tone="ground"
+        label="Custom number of votes"
+        inputMode="numeric"
+        type="number"
+        min={1}
+        max={100}
+        step={1}
+        placeholder="Enter number of votes (1 to 100)"
+        value={customText}
+        onFocus={selectCustom}
+        onChange={(event) => {
+          setMode("custom");
+          handleCustomInput(event.target.value);
+        }}
+        error={mode === "custom" && customError ? customError : undefined}
+        hint={`Cast between 1 and 100 votes per transaction. Cost is ${formatNaira(season.votePriceKobo)} per vote.`}
+      />
+
       <div className="flex flex-col gap-2">
-        <Line label={`${votes} ${votes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`} value={formatNaira(total)} />
+        {effectiveVotes > 0 ? (
+          <Line
+            label={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`}
+            value={formatNaira(total)}
+          />
+        ) : (
+          <Line label="Cost per vote" value={formatNaira(season.votePriceKobo)} />
+        )}
         <Line label="Wallet balance now" value={formatNaira(balance)} muted />
         {enough ? <Line label="Balance after voting" value={formatNaira(balance - total)} /> : null}
       </div>
 
-      {!enough ? (
+      {hasInvalidCustom ? (
+        <Button size="lg" full disabled>
+          Enter valid number of votes
+        </Button>
+      ) : !enough ? (
         <StatusPanel
           tone="orange"
           headline="Not enough credits."
@@ -180,16 +296,21 @@ function CastPanel({
               <LinkButton href="/wallet" size="md" full>
                 Add credits
               </LinkButton>
-              {affordable ? (
-                <Button tone="ground" full onClick={() => setVotes(affordable)}>
+              {affordablePreset || maxAffordableVotes > 0 ? (
+                <Button tone="ground" full onClick={chooseFewerVotes}>
                   Choose fewer votes
+                </Button>
+              ) : null}
+              {maxAffordableVotes > 0 && maxAffordableVotes !== (affordablePreset ?? 0) ? (
+                <Button tone="elevated" full onClick={chooseMaxAffordable}>
+                  Use max affordable ({maxAffordableVotes} {maxAffordableVotes === 1 ? "vote" : "votes"})
                 </Button>
               ) : null}
             </>
           }
         >
-          You need {formatNaira(total)} for {votes} {votes === 1 ? "vote" : "votes"} but your wallet has {formatNaira(balance)}. Add {formatNaira(total - balance)} or more
-          {affordable ? ", or choose fewer votes" : ""}.
+          You need {formatNaira(total)} for {effectiveVotes} {effectiveVotes === 1 ? "vote" : "votes"} but your wallet has {formatNaira(balance)}. It will be insufficient by {formatNaira(total - balance)}. Add {formatNaira(total - balance)} or more
+          {maxAffordableVotes > 0 ? ", or choose a number that tallies with your balance" : ""}.
         </StatusPanel>
       ) : (
         <Button size="lg" full onClick={() => setConfirming(true)}>
@@ -205,7 +326,7 @@ function CastPanel({
         <div className="flex flex-col gap-2.5">
           <Line label="Artist" value={artist.name} />
           <Line label="Category" value={categoryName} />
-          <Line label={`${votes} ${votes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`} value={formatNaira(total)} />
+          <Line label={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`} value={formatNaira(total)} />
           <Line label="Balance after voting" value={formatNaira(balance - total)} />
         </div>
         {problem ? <Notice>{problem}</Notice> : null}

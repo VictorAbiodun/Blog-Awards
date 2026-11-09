@@ -2,6 +2,17 @@
 
 Legend: [x] done and checked, [ ] still to do.
 
+## Level 0: Local Environment & Verification (complete)
+
+- [x] Node.js dependencies installed (`node_modules` cleanly built with Next.js 16.4.3 & React 19)
+- [x] `.env.local` created from `.env.example` with `NEXT_PUBLIC_DEMO_MODE=true`
+- [x] Windows native tooling configured (`@rolldown/binding-win32-x64-msvc` installed for test runner)
+- [x] TypeScript validation passing (`npm run typecheck` — 0 errors)
+- [x] Code style and linting passing (`npm run lint` — 0 errors, 0 warnings)
+- [x] Automated test suite passing (`npm test` — 69/69 tests passing across 6 test files)
+- [x] Dev server tested and verified (`npm run dev` boots Turbopack and serves HTTP 200 on `http://localhost:3000`)
+- [x] Agent instructions updated and documented in `AGENTS.md`
+
 ## Level 1: Foundation and architecture (complete)
 
 - [x] Environment inspected; Next.js 16, React 19, strict TypeScript, Tailwind 4, ESLint
@@ -22,6 +33,7 @@ Legend: [x] done and checked, [ ] still to do.
 - [x] Account settings: profile, change password, delete account (with confirmation)
 - [x] Fan dashboard
 - [x] Browse nominees (search, category filter, empty state) and nominee pages
+- [x] Nominee voting panel: preset tiles (1, 3, 5, 10), custom vote entry (1–100), real-time credit check, insufficient credit warning with shortfall calculation, auto-tallying ("Choose fewer votes", "Use max affordable"), confirmation dialog and receipts
 - [x] Leaderboard page and winners
 - [x] Contact page; terms, privacy and refund pages (**drafts**)
 - [x] Loading, error and empty states everywhere; helpful error messages
@@ -37,14 +49,16 @@ Frontend (done, on demo data):
 
 Backend (yours; see docs/BACKEND-HANDOFF.md):
 
-- [x] Migration 1: `profiles` with Row Level Security
-- [ ] Roles controlled only by trusted server code
-- [ ] Seasons, categories, artists, artist categories
-- [ ] Wallets, append-only ledger (integer kobo), payments, votes, audit logs, flags, winners
-- [ ] Constraints, transactions, balance derived from the ledger
-- [ ] Authentication wired to Supabase; verified-account check before money operations; server-side checks on every method
-- [ ] Secure bootstrap for the first administrator (never "first user wins")
-- [ ] Tests proving one user cannot read or change another user's wallet
+- [x] Migration 1: `profiles` with Row Level Security (applied to remote)
+- [x] Migration 2: `user_roles` controlled strictly by trusted server code (fan/admin RLS) (applied to remote)
+- [x] Migration 3: `seasons`, `categories`, `artists`, `artist_categories`, `winners` (RLS for public vs admin) (applied to remote)
+- [x] Migration 4: `wallets`, append-only `wallet_ledger` (integer kobo, immutable trigger), `payments`, `votes` (applied to remote)
+- [x] Migration 5: `audit_logs` (append-only trigger), `flags`, `announcements` (applied to remote)
+- [x] Migration 6: Atomic database RPC functions (`cast_votes` transaction, `get_wallet_balance` ledger sum) (applied to remote)
+- [x] Migration 7: Inaugural season and starter categories seed (applied to remote)
+- [x] Authentication & backend API implemented in `src/services/backend-api.ts` connecting Supabase
+- [x] Secure server routes for admin management, account deletion, and refunds with required reason
+- [ ] Tests proving one user cannot read or change another user's wallet (local pgTAP with Docker)
 - [ ] Rate limits on sensitive actions
 
 ## Level 4: Wallet, Paystack funding and financial integrity
