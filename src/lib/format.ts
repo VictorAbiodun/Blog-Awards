@@ -28,7 +28,7 @@ export function formatDateTime(iso: string): string {
 }
 
 export function formatNumber(value: number): string {
-  return value.toLocaleString("en-NG");
+  return (value ?? 0).toLocaleString("en-NG");
 }
 
 export function pluralise(count: number, singular: string, plural = `${singular}s`): string {

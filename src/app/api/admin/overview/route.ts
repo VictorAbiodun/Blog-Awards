@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireServerAdmin } from "@/lib/supabase/admin-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { AdminOverview } from "@/types/domain";
 
 export async function GET() {
   const check = await requireServerAdmin();
@@ -14,13 +15,15 @@ export async function GET() {
   const [
     { count: totalVotesCount },
     { data: paymentsData },
-    { count: publishedArtistsCount },
+    { count: pendingPaymentsCount },
+    { count: draftArtistsCount },
     { count: pendingFlagsCount },
     { data: auditData },
   ] = await Promise.all([
     admin.from("votes").select("*", { count: "exact", head: true }),
     admin.from("payments").select("amount_kobo").eq("status", "verified"),
-    admin.from("artists").select("*", { count: "exact", head: true }).eq("status", "published"),
+    admin.from("payments").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    admin.from("artists").select("*", { count: "exact", head: true }).eq("status", "draft"),
     admin.from("flags").select("*", { count: "exact", head: true }).eq("status", "pending"),
     admin
       .from("audit_logs")
@@ -29,24 +32,21 @@ export async function GET() {
       .limit(6),
   ]);
 
-  const totalCreditsSoldKobo = (paymentsData ?? []).reduce(
+  const verifiedPaymentsKobo = (paymentsData ?? []).reduce(
     (sum, p) => sum + (p.amount_kobo ?? 0),
     0,
   );
 
-  const overview = {
-    totalVotes: totalVotesCount ?? 0,
-    totalCreditsSoldKobo,
-    publishedArtists: publishedArtistsCount ?? 0,
-    pendingFlags: pendingFlagsCount ?? 0,
-    recentAudit: (auditData ?? []).map((entry) => ({
+  const overview: AdminOverview = {
+    verifiedPaymentsKobo,
+    votesCast: totalVotesCount ?? 0,
+    openFlags: pendingFlagsCount ?? 0,
+    draftArtists: draftArtistsCount ?? 0,
+    pendingPayments: pendingPaymentsCount ?? 0,
+    recentActions: (auditData ?? []).map((entry) => ({
       id: entry.id,
-      userId: entry.user_id,
-      adminName: entry.profiles?.display_name ?? "Administrator",
       action: entry.action,
-      entityType: entry.entity_type,
-      entityId: entry.entity_id,
-      details: typeof entry.details === "string" ? entry.details : JSON.stringify(entry.details),
+      actor: entry.profiles?.display_name ?? "Administrator",
       reason: entry.reason ?? undefined,
       createdAt: entry.created_at,
     })),
