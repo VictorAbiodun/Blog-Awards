@@ -100,13 +100,23 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
     problems.push("PAYMENT_PROVIDER=mock is not allowed in production.");
   }
 
-  const required = [
-    "NEXT_PUBLIC_APP_URL",
+  const appUrl =
+    env.NEXT_PUBLIC_APP_URL ||
+    (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined) ||
+    (env.VERCEL_URL ? `https://${env.VERCEL_URL}` : undefined);
+
+  if (!present(appUrl)) {
+    problems.push("NEXT_PUBLIC_APP_URL is required in production.");
+  } else if (PLACEHOLDER_PATTERN.test(appUrl)) {
+    problems.push("NEXT_PUBLIC_APP_URL still contains a placeholder value.");
+  }
+
+  const otherRequired = [
     "NEXT_PUBLIC_SUPABASE_URL",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY",
   ] as const;
-  for (const name of required) {
+  for (const name of otherRequired) {
     const value = env[name];
     if (!present(value)) {
       problems.push(`${name} is required in production.`);
@@ -115,15 +125,23 @@ function checkProductionBasics(env: RawEnv, problems: string[]) {
     }
   }
 
-  for (const name of ["NEXT_PUBLIC_APP_URL", "NEXT_PUBLIC_SUPABASE_URL"] as const) {
-    const value = env[name];
-    if (!present(value)) continue;
+  if (present(appUrl)) {
     try {
-      const url = new URL(value);
-      if (url.protocol !== "https:") problems.push(`${name} must use https in production.`);
-      if (isLocalHost(url)) problems.push(`${name} must not point at localhost in production.`);
+      const url = new URL(appUrl);
+      if (url.protocol !== "https:") problems.push("NEXT_PUBLIC_APP_URL must use https in production.");
+      if (isLocalHost(url)) problems.push("NEXT_PUBLIC_APP_URL must not point at localhost in production.");
     } catch {
-      problems.push(`${name} is not a valid URL.`);
+      problems.push("NEXT_PUBLIC_APP_URL is not a valid URL.");
+    }
+  }
+
+  if (present(env.NEXT_PUBLIC_SUPABASE_URL)) {
+    try {
+      const url = new URL(env.NEXT_PUBLIC_SUPABASE_URL);
+      if (url.protocol !== "https:") problems.push("NEXT_PUBLIC_SUPABASE_URL must use https in production.");
+      if (isLocalHost(url)) problems.push("NEXT_PUBLIC_SUPABASE_URL must not point at localhost in production.");
+    } catch {
+      problems.push("NEXT_PUBLIC_SUPABASE_URL is not a valid URL.");
     }
   }
 
