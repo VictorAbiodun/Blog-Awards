@@ -13,35 +13,40 @@ function toSlug(name: string): string {
 }
 
 export async function GET() {
-  const check = await requireServerAdmin();
-  if (!check.ok) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const check = await requireServerAdmin();
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: artists, error } = await admin
+      .from("artists")
+      .select("*, artist_categories(category_id)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const formatted = (artists ?? []).map((a) => ({
+      id: a.id,
+      slug: a.slug,
+      name: a.name,
+      bio: a.bio,
+      categoryIds: (a.artist_categories ?? []).map((ac: { category_id: string }) => ac.category_id),
+      musicUrl: a.music_url ?? "",
+      socialUrl: a.social_url ?? "",
+      imageUrl: a.image_path ?? undefined,
+      status: a.status,
+      votes: a.votes ?? 0,
+    }));
+
+    return NextResponse.json(formatted);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const admin = createSupabaseAdminClient();
-  const { data: artists, error } = await admin
-    .from("artists")
-    .select("*, artist_categories(category_id)")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const formatted = (artists ?? []).map((a) => ({
-    id: a.id,
-    slug: a.slug,
-    name: a.name,
-    bio: a.bio,
-    categoryIds: (a.artist_categories ?? []).map((ac: { category_id: string }) => ac.category_id),
-    musicUrl: a.music_url ?? "",
-    socialUrl: a.social_url ?? "",
-    imageUrl: a.image_path ?? undefined,
-    status: a.status,
-    votes: a.votes ?? 0,
-  }));
-
-  return NextResponse.json(formatted);
 }
 
 export async function POST(request: Request) {

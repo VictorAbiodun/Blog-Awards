@@ -32,10 +32,17 @@ function client() {
 }
 
 async function handleApiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const supabase = client();
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers = new Headers(init?.headers);
+  if (session?.access_token) {
+    headers.set("Authorization", `Bearer ${session.access_token}`);
+  }
+
+  const res = await fetch(url, { ...init, headers });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const errorMsg = data?.error || res.statusText || "Request failed";
+    const errorMsg = data?.error || data?.message || res.statusText || "Request failed";
     const code =
       res.status === 401
         ? "not_signed_in"

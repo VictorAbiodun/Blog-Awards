@@ -4,32 +4,37 @@ import { requireServerAdmin } from "@/lib/supabase/admin-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  const check = await requireServerAdmin();
-  if (!check.ok) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const check = await requireServerAdmin();
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: winners, error } = await admin
+      .from("winners")
+      .select("*, categories(name), artists(name, slug, votes)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const formatted = (winners ?? []).map((w) => ({
+      categoryId: w.category_id,
+      categoryName: w.categories?.name ?? "Category",
+      artistId: w.artist_id,
+      artistSlug: w.artists?.slug ?? "nominee",
+      artistName: w.artists?.name ?? "Nominee",
+      votes: w.artists?.votes ?? 0,
+      publishedAt: w.published_at,
+    }));
+
+    return NextResponse.json(formatted);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const admin = createSupabaseAdminClient();
-  const { data: winners, error } = await admin
-    .from("winners")
-    .select("*, categories(name), artists(name, slug, votes)")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const formatted = (winners ?? []).map((w) => ({
-    categoryId: w.category_id,
-    categoryName: w.categories?.name ?? "Category",
-    artistId: w.artist_id,
-    artistSlug: w.artists?.slug ?? "nominee",
-    artistName: w.artists?.name ?? "Nominee",
-    votes: w.artists?.votes ?? 0,
-    publishedAt: w.published_at,
-  }));
-
-  return NextResponse.json(formatted);
 }
 
 export async function POST(request: Request) {

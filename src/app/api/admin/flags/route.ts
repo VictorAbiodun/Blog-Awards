@@ -4,33 +4,38 @@ import { requireServerAdmin } from "@/lib/supabase/admin-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  const check = await requireServerAdmin();
-  if (!check.ok) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const check = await requireServerAdmin();
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
+    }
+
+    const admin = createSupabaseAdminClient();
+    const { data: flags, error } = await admin
+      .from("flags")
+      .select("*, profiles:user_id(display_name)")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const formatted = (flags ?? []).map((f) => ({
+      id: f.id,
+      userId: f.user_id,
+      userLabel: f.profiles?.display_name ?? "Unknown",
+      kind: f.flag_type,
+      severity: f.severity,
+      reason: f.description,
+      status: f.status,
+      createdAt: f.created_at,
+    }));
+
+    return NextResponse.json(formatted);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const admin = createSupabaseAdminClient();
-  const { data: flags, error } = await admin
-    .from("flags")
-    .select("*, profiles:user_id(display_name)")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const formatted = (flags ?? []).map((f) => ({
-    id: f.id,
-    userId: f.user_id,
-    userLabel: f.profiles?.display_name ?? "Unknown",
-    kind: f.flag_type,
-    severity: f.severity,
-    reason: f.description,
-    status: f.status,
-    createdAt: f.created_at,
-  }));
-
-  return NextResponse.json(formatted);
 }
 
 export async function PATCH(request: Request) {

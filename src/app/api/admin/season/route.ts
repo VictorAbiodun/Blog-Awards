@@ -4,43 +4,48 @@ import { requireServerAdmin } from "@/lib/supabase/admin-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  const check = await requireServerAdmin();
-  if (!check.ok) {
-    return NextResponse.json({ error: check.error }, { status: check.status });
+  try {
+    const check = await requireServerAdmin();
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
+    }
+
+    const admin = createSupabaseAdminClient();
+    const [{ data: season, error: seasonErr }, { data: categories }] =
+      await Promise.all([
+        admin.from("seasons").select("*").eq("is_current", true).single(),
+        admin.from("categories").select("*").order("display_order"),
+      ]);
+
+    if (seasonErr || !season) {
+      return NextResponse.json({ error: "Season not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      season: {
+        id: season.id,
+        name: season.name,
+        votingStatus: season.voting_status,
+        votePriceKobo: season.vote_price_kobo,
+        minTopUpKobo: season.min_top_up_kobo,
+        maxTopUpKobo: season.max_top_up_kobo,
+        rulesVersion: season.rules_version,
+        votingOpensAt: season.voting_opens_at,
+        votingClosesAt: season.voting_closes_at,
+        showVoteCounts: season.show_vote_counts,
+      },
+      categories: (categories ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        eligibility: c.eligibility,
+        status: c.status,
+      })),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const admin = createSupabaseAdminClient();
-  const [{ data: season, error: seasonErr }, { data: categories }] =
-    await Promise.all([
-      admin.from("seasons").select("*").eq("is_current", true).single(),
-      admin.from("categories").select("*").order("display_order"),
-    ]);
-
-  if (seasonErr || !season) {
-    return NextResponse.json({ error: "Season not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({
-    season: {
-      id: season.id,
-      name: season.name,
-      votingStatus: season.voting_status,
-      votePriceKobo: season.vote_price_kobo,
-      minTopUpKobo: season.min_top_up_kobo,
-      maxTopUpKobo: season.max_top_up_kobo,
-      rulesVersion: season.rules_version,
-      votingOpensAt: season.voting_opens_at,
-      votingClosesAt: season.voting_closes_at,
-      showVoteCounts: season.show_vote_counts,
-    },
-    categories: (categories ?? []).map((c) => ({
-      id: c.id,
-      name: c.name,
-      description: c.description,
-      eligibility: c.eligibility,
-      status: c.status,
-    })),
-  });
 }
 
 export async function POST(request: Request) {
