@@ -155,3 +155,4 @@ comment on function public.set_user_role is
   'Allows the Super Administrator to promote a user to admin or demote an admin to fan.';
 
 grant execute on function public.set_user_role(uuid, text, uuid) to authenticated;
+
