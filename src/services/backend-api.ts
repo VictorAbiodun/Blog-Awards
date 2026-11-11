@@ -104,11 +104,13 @@ export const backendApi: BlogAwardApi = {
 
   async register({ displayName, email, password }) {
     const supabase = client();
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { display_name: displayName.trim() },
+        emailRedirectTo: `${origin}/auth/callback?next=/email-confirmed`,
       },
     });
 
@@ -169,7 +171,7 @@ export const backendApi: BlogAwardApi = {
     const supabase = client();
     const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/reset-password`,
+      redirectTo: `${origin}/auth/callback?next=/reset-password`,
     });
   },
 
@@ -183,7 +185,14 @@ export const backendApi: BlogAwardApi = {
 
   async resendConfirmation(email: string) {
     const supabase = client();
-    const { error } = await supabase.auth.resend({ type: "signup", email });
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: {
+        emailRedirectTo: `${origin}/auth/callback?next=/email-confirmed`,
+      },
+    });
     if (error) {
       throw new ApiError("validation", error.message);
     }

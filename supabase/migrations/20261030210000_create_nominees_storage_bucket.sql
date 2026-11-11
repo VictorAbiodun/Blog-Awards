@@ -64,3 +64,4 @@ create policy "Admins can delete nominee images"
       )
     )
   );
+

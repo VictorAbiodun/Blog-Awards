@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { isDemoMode } from "@/lib/demo-mode";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { api } from "@/services";
 import { DEMO_CHANGE_EVENT } from "@/services/demo/store";
 import type { Session, User } from "@/types/domain";
@@ -45,9 +47,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const bump = () => setTick((value) => value + 1);
     window.addEventListener(DEMO_CHANGE_EVENT, bump);
     window.addEventListener("focus", bump);
+
+    let unsubscribe: (() => void) | undefined;
+    if (!isDemoMode) {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+          if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+            setTick((value) => value + 1);
+          } else if (event === "SIGNED_OUT") {
+            setSession({ status: "signedOut" });
+          }
+        });
+        unsubscribe = () => data.subscription.unsubscribe();
+      } catch {
+        // Safe fallback for test or mock environments
+      }
+    }
+
     return () => {
       window.removeEventListener(DEMO_CHANGE_EVENT, bump);
       window.removeEventListener("focus", bump);
+      unsubscribe?.();
     };
   }, []);
 

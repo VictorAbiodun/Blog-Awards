@@ -56,6 +56,11 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+      {params.get("error") ? (
+        <Notice tone="error">
+          {params.get("error")}
+        </Notice>
+      ) : null}
       {problem ? (
         <Notice>
           {problem.message}
