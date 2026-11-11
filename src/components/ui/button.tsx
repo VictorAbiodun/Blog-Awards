@@ -40,8 +40,8 @@ interface Look {
 
 function look({ tone = "gold", size = "md", full = false }: Look, extra = "") {
   return [
-    "inline-flex items-center justify-center text-center font-bold leading-none transition-opacity",
-    "disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+    "inline-flex items-center justify-center text-center font-bold leading-none select-none transition-all duration-150 active:scale-[0.98]",
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
     toneClass[tone],
     sizeClass[size],
     full ? "w-full" : "",

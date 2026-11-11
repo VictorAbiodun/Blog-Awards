@@ -3,8 +3,9 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { LinkButton } from "@/components/ui/button";
-import { ErrorBlock, FilterChip, LoadingBlock } from "@/components/ui/feedback";
+import { EmptyState, ErrorBlock, FilterChip, NomineeGridSkeleton } from "@/components/ui/feedback";
 import { useAsync } from "@/hooks/use-async";
+import { useDebounce } from "@/hooks/use-debounce";
 import { formatNumber, initials } from "@/lib/format";
 import { api } from "@/services";
 
@@ -17,16 +18,17 @@ export function NomineesBrowser() {
   }, []);
   const { state, reload } = useAsync(load);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 250);
   const [categoryId, setCategoryId] = useState("all");
 
   const visible = useMemo(() => {
     if (state.status !== "ready") return [];
-    const needle = query.trim().toLowerCase();
+    const needle = debouncedQuery.trim().toLowerCase();
     return state.data.artists.filter(
       (artist) =>
         (categoryId === "all" || artist.categoryIds.includes(categoryId)) && (needle === "" || artist.name.toLowerCase().includes(needle)),
     );
-  }, [state, query, categoryId]);
+  }, [state, debouncedQuery, categoryId]);
 
   return (
     <div>
@@ -38,13 +40,17 @@ export function NomineesBrowser() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search nominees by name"
-            className="min-w-0 flex-1 bg-transparent text-xl text-ink placeholder:text-muted"
+            className="min-w-0 flex-1 bg-transparent text-xl text-ink placeholder:text-muted focus:outline-none"
           />
         </label>
         {state.status === "ready" ? (
-          <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label="Filter by category"
+            className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none touch-pan-x"
+          >
             <FilterChip selected={categoryId === "all"} onClick={() => setCategoryId("all")}>
-              All
+              All ({state.data.artists.length})
             </FilterChip>
             {state.data.categories.map((category) => (
               <FilterChip key={category.id} selected={categoryId === category.id} onClick={() => setCategoryId(category.id)}>
@@ -55,33 +61,33 @@ export function NomineesBrowser() {
         ) : null}
       </div>
 
-      {state.status === "loading" ? <LoadingBlock label="Loading nominees" /> : null}
+      {state.status === "loading" ? <NomineeGridSkeleton count={8} /> : null}
       {state.status === "error" ? <ErrorBlock error={state.error} onRetry={reload} /> : null}
 
       {state.status === "ready" && visible.length === 0 ? (
         <div className="px-5 pb-24 md:px-6 md:pb-32">
-          <div className="flex flex-col items-start gap-4 bg-grey p-6 text-on-color md:p-12">
-            <h2 className="font-display text-[64px] uppercase leading-[0.9] md:text-[120px]">
-              {state.data.artists.length === 0 ? "No nominees yet." : "No nominees match."}
-            </h2>
-            <p className="max-w-[640px] text-xl leading-[1.45]">
-              {state.data.artists.length === 0
-                ? "Approved nominees will appear here once the administrator adds and publishes them."
-                : "Try a different name or clear the filter."}
-            </p>
-            {state.data.artists.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  setCategoryId("all");
-                }}
-                className="text-xl font-bold underline underline-offset-4"
-              >
-                Clear search and filters
-              </button>
-            ) : null}
-          </div>
+          <EmptyState
+            headline={state.data.artists.length === 0 ? "No Nominees Yet" : "No Matches Found"}
+            description={
+              state.data.artists.length === 0
+                ? "Official nominees will appear here once the administrator adds and publishes them."
+                : "No nominees matched your current search or category filter. Try clearing your filters."
+            }
+            action={
+              state.data.artists.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    setCategoryId("all");
+                  }}
+                  className="text-lg font-bold underline underline-offset-4 text-gold hover:text-ink"
+                >
+                  Clear search and filters
+                </button>
+              ) : null
+            }
+          />
         </div>
       ) : null}
 

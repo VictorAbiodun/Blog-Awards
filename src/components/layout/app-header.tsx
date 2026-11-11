@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/ui/feedback";
 import { useSession } from "@/hooks/session";
-import { formatNaira } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { api } from "@/services";
 import { DEMO_CHANGE_EVENT } from "@/services/demo/store";
 
@@ -17,7 +17,7 @@ function useBalance(): number | null {
     const load = () =>
       api.getWallet().then(
         (wallet) => {
-          if (!cancelled) setBalance(wallet.balanceKobo);
+          if (!cancelled) setBalance(wallet.balancePoints ?? wallet.balanceKobo);
         },
         () => undefined,
       );
@@ -86,7 +86,11 @@ export function AppHeader() {
           ) : null}
         </nav>
         <div className="flex items-center gap-3 md:gap-4">
-          {balance !== null ? <span className="text-lg font-semibold">{formatNaira(balance)}</span> : null}
+          {balance !== null ? (
+            <span className="rounded bg-elevated px-2.5 py-1 text-base font-bold text-gold md:text-lg">
+              {formatNumber(balance)} {balance === 1 ? "pt" : "pts"}
+            </span>
+          ) : null}
           <Link
             href="/settings"
             aria-current={pathname === "/settings" ? "page" : undefined}
@@ -110,17 +114,22 @@ export function AppHeader() {
         </div>
       </header>
 
-      <nav aria-label="Tabs" className="fixed inset-x-0 bottom-0 z-30 flex justify-between bg-surface px-5 py-4 md:hidden">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={isActive(pathname, tab.href) ? "page" : undefined}
-            className="text-[17px] font-medium aria-[current=page]:font-bold aria-[current=page]:underline"
-          >
-            {tab.label}
-          </Link>
-        ))}
+      <nav aria-label="Tabs" className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-ground bg-surface px-2 py-2 md:hidden">
+        {tabs.map((tab) => {
+          const active = isActive(pathname, tab.href);
+          return (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-h-[44px] min-w-[48px] flex-col items-center justify-center px-3 py-1 text-[15px] font-medium transition-colors ${
+                active ? "font-bold text-gold underline underline-offset-4" : "text-muted hover:text-ink"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
       </nav>
     </>
   );
