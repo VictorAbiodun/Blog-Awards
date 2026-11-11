@@ -616,6 +616,16 @@ export const backendApi: BlogAwardApi = {
     return handleApiFetch<Artist[]>("/api/admin/artists");
   },
 
+  async uploadArtistImage(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await handleApiFetch<{ url: string }>("/api/admin/media/upload", {
+      method: "POST",
+      body: formData,
+    });
+    return res.url;
+  },
+
   async saveArtist(input: ArtistInput): Promise<Artist> {
     return handleApiFetch<Artist>("/api/admin/artists", {
       method: "POST",

@@ -151,6 +151,7 @@ export interface BlogAwardApi {
   approveFundingRequest(input: { requestId: string; actualAmountNaira: number }): Promise<FundingRequest>;
   rejectFundingRequest(input: { requestId: string; reason: string }): Promise<FundingRequest>;
   listAdminArtists(): Promise<Artist[]>;
+  uploadArtistImage(file: File): Promise<string>;
   saveArtist(input: ArtistInput): Promise<Artist>;
   getAdminSeason(): Promise<{ season: Season; categories: Category[] }>;
   saveSeasonSettings(input: SeasonSettingsInput): Promise<Season>;

@@ -46,7 +46,13 @@ export function NomineeView({ slug }: { slug: string }) {
         <div className="flex aspect-square w-full items-center justify-center bg-elevated p-[8%]">
           {artist.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- administrator-supplied image of unknown size
-            <img src={artist.imageUrl} alt={`${artist.name}`} className="size-full object-cover" />
+            <img
+              src={artist.imageUrl}
+              alt={`${artist.name}`}
+              loading="eager"
+              decoding="async"
+              className="size-full rounded-md object-cover shadow-sm"
+            />
           ) : (
             <BallotStub name={artist.name} category={categoryName} price="1 Point (₦50)" />
           )}

@@ -589,6 +589,18 @@ export const demoApi: BlogAwardApi = {
     return state.artists;
   },
 
+  async uploadArtistImage(file: File): Promise<string> {
+    await wait();
+    const state = readState();
+    requireAdmin(state);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new ApiError("unknown", "Failed to read demo image file."));
+      reader.readAsDataURL(file);
+    });
+  },
+
   async saveArtist(input: ArtistInput) {
     await wait();
     return mutate((state) => {

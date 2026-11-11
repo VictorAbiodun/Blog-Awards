@@ -102,12 +102,23 @@ export function NomineesBrowser() {
               const category = state.data.categories.find((c) => c.id === artist.categoryIds[0])?.name ?? "";
               return (
                 <li key={artist.id} className={`flex items-center gap-3.5 p-3.5 text-on-color md:flex-col md:items-stretch md:gap-2.5 md:p-[22px] ${tone.panel}`}>
-                  <span
-                    aria-hidden="true"
-                    className={`flex size-14 shrink-0 items-center justify-center bg-on-color font-display text-[28px] leading-none md:size-[72px] md:text-4xl ${tone.initials}`}
-                  >
-                    {initials(artist.name)}
-                  </span>
+                  {artist.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- responsive CDN-hosted nominee photo
+                    <img
+                      src={artist.imageUrl}
+                      alt={artist.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="size-14 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-black/10 md:size-[72px]"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={`flex size-14 shrink-0 items-center justify-center bg-on-color font-display text-[28px] leading-none md:size-[72px] md:text-4xl ${tone.initials}`}
+                    >
+                      {initials(artist.name)}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1 md:mt-[70px]">
                     <h2 className="text-xl font-bold leading-[1.2] md:text-2xl">{artist.name}</h2>
                     <p className="text-base leading-[1.25] md:text-[19px]">{category}</p>

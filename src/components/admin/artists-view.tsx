@@ -9,11 +9,12 @@ import { ErrorBlock, LoadingBlock, Notice } from "@/components/ui/feedback";
 import { useAsync } from "@/hooks/use-async";
 import { errorMessage } from "@/lib/error-message";
 import { fieldErrors } from "@/lib/form";
+import { compressImage } from "@/lib/image-compressor";
 import { artistFormSchema } from "@/lib/validation";
 import { api } from "@/services";
 import type { Artist } from "@/types/domain";
 
-const MAX_IMAGE_BYTES = 150 * 1024;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB limit before compression
 const empty = { name: "", bio: "", musicUrl: "", socialUrl: "", categoryIds: [] as string[], status: "draft" as "draft" | "published", imageUrl: undefined as string | undefined };
 
 export function AdminArtistsView() {
@@ -28,6 +29,7 @@ export function AdminArtistsView() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   function edit(artist: Artist) {
     setEditingId(artist.id);
@@ -42,15 +44,33 @@ export function AdminArtistsView() {
     setErrors({});
   }
 
-  function pickImage(event: ChangeEvent<HTMLInputElement>) {
+  async function pickImage(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return setErrors({ image: "Choose an image file." });
-    if (file.size > MAX_IMAGE_BYTES) return setErrors({ image: "Choose a smaller image (under 150 KB)." });
-    const reader = new FileReader();
-    reader.onload = () => setForm((current) => ({ ...current, imageUrl: String(reader.result) }));
-    reader.readAsDataURL(file);
-    setErrors({});
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, image: "Choose a valid image file (JPEG, PNG, WebP)." }));
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setErrors((prev) => ({ ...prev, image: "Choose an image under 10 MB." }));
+      return;
+    }
+    setErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.image;
+      return copy;
+    });
+    setUploadingImage(true);
+    try {
+      const optimized = await compressImage(file, { maxDimension: 1000, quality: 0.85 });
+      const uploadedUrl = await api.uploadArtistImage(optimized);
+      setForm((current) => ({ ...current, imageUrl: uploadedUrl }));
+    } catch (err) {
+      setErrors((prev) => ({ ...prev, image: errorMessage(err) }));
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   }
 
   async function save(status: "draft" | "published", event?: FormEvent) {
@@ -108,13 +128,40 @@ export function AdminArtistsView() {
               <label htmlFor="artist-image" className="text-[19px] font-medium">
                 Profile image
               </label>
-              <div className="flex flex-col items-center gap-2 bg-ground px-4 py-5 text-center">
+              <div className="flex flex-col items-center gap-3 bg-ground px-4 py-5 text-center">
                 {form.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- local preview of an uploaded file
-                  <img src={form.imageUrl} alt="Preview of the chosen image" className="size-20 object-cover" />
+                  <div className="flex flex-col items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- preview of uploaded nominee image */}
+                    <img src={form.imageUrl} alt="Preview of nominee profile" className="size-24 rounded object-cover shadow-sm ring-2 ring-gold/40" />
+                    <button
+                      type="button"
+                      onClick={() => setForm((c) => ({ ...c, imageUrl: undefined }))}
+                      className="text-sm font-semibold text-orange underline underline-offset-2 hover:opacity-80"
+                    >
+                      Remove photo
+                    </button>
+                  </div>
                 ) : null}
-                <input id="artist-image" type="file" accept="image/*" onChange={pickImage} className="w-full text-base" />
-                <p className="text-base text-muted">Use only images you own or have permission to use.</p>
+
+                {uploadingImage ? (
+                  <p className="text-base font-semibold text-gold animate-pulse">
+                    Optimizing and uploading photo to Supabase Storage...
+                  </p>
+                ) : (
+                  <>
+                    <input
+                      id="artist-image"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      disabled={uploadingImage}
+                      onChange={pickImage}
+                      className="w-full text-base file:mr-3 file:border-0 file:bg-gold file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink hover:file:opacity-90"
+                    />
+                    <p className="text-sm text-muted">
+                      Supports JPEG, PNG, or WebP. Automatically optimized and compressed before upload.
+                    </p>
+                  </>
+                )}
               </div>
               {errors.image ? (
                 <p role="alert" className="text-base font-semibold text-orange">

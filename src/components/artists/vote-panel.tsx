@@ -96,20 +96,18 @@ export function VotePanel({ artist, categoryName, season, onSeasonChange }: { ar
     );
   }
 
-  return <CastPanel artist={artist} categoryName={categoryName} season={season} onSeasonChange={onSeasonChange} onSignedOut={refresh} onDone={(id) => router.push(`/receipts/${id}`)} />;
+  return <CastPanel artist={artist} categoryName={categoryName} onSeasonChange={onSeasonChange} onSignedOut={refresh} onDone={(id) => router.push(`/receipts/${id}`)} />;
 }
 
 function CastPanel({
   artist,
   categoryName,
-  season: _season,
   onSeasonChange,
   onSignedOut,
   onDone,
 }: {
   artist: Artist;
   categoryName: string;
-  season: Season;
   onSeasonChange: () => void;
   onSignedOut: () => void;
   onDone: (receiptId: string) => void;
