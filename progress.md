@@ -88,8 +88,12 @@ This document tracks the comprehensive production audit of **Blog Award 2.0** ac
 
 ### 9. Image Optimisation
 - **Implemented**:
-  - Added lazy loading (`loading="lazy"`) and asynchronous decoding (`decoding="async"`) to nominee and artist image previews.
-  - Added remote patterns to `next.config.ts` allowing secure Next.js image loading from external URLs.
+  - **Supabase Storage bucket**: Created `nominees` public storage bucket and RLS policies (`supabase/migrations/20261030210000_create_nominees_storage_bucket.sql`).
+  - **Smart client-side canvas compressor**: Added `src/lib/image-compressor.ts` which automatically resizes any image up to 10MB down to 1000px and converts to lightweight, crisp WebP (<120KB) in milliseconds before upload.
+  - **Server-side media upload API**: Added `POST /api/admin/media/upload` using Supabase storage admin client with 1-year CDN cache headers and public URL generation.
+  - **Admin artist management**: Integrated automatic compression and Supabase Storage upload in `src/components/admin/artists-view.tsx` with live upload indicators and photo removal.
+  - **Nominees gallery grid**: Updated `src/components/artists/nominees-browser.tsx` to render the nominee's profile photo on their card with fallback to initials badge.
+  - Added lazy loading (`loading="lazy"` / `loading="eager"`), asynchronous decoding (`decoding="async"`), and AVIF/WebP automatic negotiation in `next.config.ts`.
 
 ### 10. Page Transitions
 - **Implemented**:
