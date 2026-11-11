@@ -156,3 +156,18 @@ This document tracks the comprehensive production audit of **Blog Award 2.0** ac
   - Safe runtime `/api/health` configuration checking endpoint.
   - Immutable database `audit_logs` tracking every administrative action.
 
+---
+
+## 21. Additional Migration & Production Fixes (Post-Audit)
+
+### Points Currency Model Normalisation & ₦0.04 Fix
+- **Problem**: When users held points (e.g. 4 points), `dashboard-view.tsx` and `vote-panel.tsx` called `formatNaira(balance)` which divided the integer by 100 (`4 / 100 = 0.04`), displaying `₦0.04` and incorrectly treating 1 vote as costing 5,000 kobo (₦50.00).
+- **Resolution**:
+  - Added `balancePoints` property to `DashboardData` in `src/types/domain.ts`, `backendApi.getDashboard()`, and `demoApi.getDashboard()`.
+  - Updated `src/components/member/dashboard-view.tsx` to display available points with `{pluralise(balance, "Point")}`, `+4 pts` in transaction logs, and `{votes} points` in voting activity.
+  - Updated `src/components/artists/vote-panel.tsx` to compute vote costs directly in points (1 vote = 1 point), displaying available points and cost in points rather than cash.
+  - Updated `src/components/artists/receipt-view.tsx` to show "Rate: 1 Point per vote", "Points deducted", and "Points balance after".
+  - Updated `src/components/artists/nominee-view.tsx` BallotStub to display "1 Point (₦50)".
+  - Updated Vitest unit tests in `src/components/artists/vote-panel.test.tsx` (all 81 unit tests passing).
+
+
