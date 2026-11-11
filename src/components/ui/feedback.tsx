@@ -12,9 +12,8 @@ export function Notice({ tone = "error", children }: { tone?: "error" | "info"; 
   return (
     <div
       role={tone === "error" ? "alert" : "status"}
-      className={`flex items-start gap-3 px-4 py-3.5 text-lg font-medium leading-[1.35] ${
-        tone === "error" ? "bg-orange text-on-color" : "bg-elevated text-ink"
-      }`}
+      className={`flex items-start gap-3 px-4 py-3.5 text-lg font-medium leading-[1.35] ${tone === "error" ? "bg-orange text-on-color" : "bg-elevated text-ink"
+        }`}
     >
       <span aria-hidden="true" className="font-bold">
         {tone === "error" ? "!" : "i"}
@@ -147,9 +146,8 @@ export function Avatar({ name, size = 72, tone = "mint", ink = "on-color" }: { n
     <span
       aria-hidden="true"
       style={{ width: size, height: size, fontSize: size * 0.5 }}
-      className={`inline-flex shrink-0 items-center justify-center font-display leading-none ${panelClass[tone]} ${
-        ink === "ink" ? "text-ink" : ""
-      }`}
+      className={`inline-flex shrink-0 items-center justify-center font-display leading-none ${panelClass[tone]} ${ink === "ink" ? "text-ink" : ""
+        }`}
     >
       {initials(name)}
     </span>
@@ -197,9 +195,8 @@ export function ChoiceTile({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-1 px-2 ${tall ? "h-24 md:h-28" : "h-20 md:h-24"} ${
-        selected ? "bg-gold text-on-color" : "bg-ground text-ink"
-      }`}
+      className={`flex flex-col items-center justify-center gap-1 px-2 ${tall ? "h-24 md:h-28" : "h-20 md:h-24"} ${selected ? "bg-gold text-on-color" : "bg-ground text-ink"
+        }`}
     >
       <span className="font-display text-[36px] leading-none md:text-5xl">{children}</span>
       <span className="text-base font-semibold leading-none">{selected ? "Selected" : (sub ?? "")}</span>

@@ -54,3 +54,4 @@ export function trackError(error: unknown, context?: Record<string, unknown>) {
     (window as unknown as { Sentry: { captureException: (err: unknown) => void } }).Sentry.captureException(error);
   }
 }
+

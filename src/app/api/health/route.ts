@@ -28,3 +28,7 @@ export async function GET() {
     { status: healthy ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
 }
+
+export async function HEAD() {
+  return new Response(null, { status: 200, headers: { "Cache-Control": "no-store" } });
+}
