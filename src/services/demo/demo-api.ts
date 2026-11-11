@@ -288,6 +288,7 @@ export const demoApi: BlogAwardApi = {
     return {
       user: publicUser(user),
       balanceKobo: balanceOf(state, user.id),
+      balancePoints: balanceOf(state, user.id),
       votesCast: receipts.reduce((sum, r) => sum + r.votes, 0),
       season: state.season,
       transactions: state.ledger.filter((l) => l.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5),

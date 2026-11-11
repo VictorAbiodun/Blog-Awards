@@ -179,6 +179,7 @@ export interface Winner {
 
 export interface DashboardData {
   user: User;
+  balancePoints?: number;
   balanceKobo: number;
   votesCast: number;
   season: Season;

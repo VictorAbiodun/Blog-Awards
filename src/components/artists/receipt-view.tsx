@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { LinkButton } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { useAsync } from "@/hooks/use-async";
-import { formatDateTime, formatNaira } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { api } from "@/services";
 
 export function ReceiptView({ id }: { id: string }) {
@@ -19,10 +19,10 @@ export function ReceiptView({ id }: { id: string }) {
   const rows: Array<[string, string]> = [
     ["Artist", receipt.artistName],
     ["Category", receipt.categoryName],
-    ["Votes", String(receipt.votes)],
-    ["Price", `${formatNaira(receipt.priceKobo)} each`],
-    ["Total", formatNaira(receipt.totalKobo)],
-    ["Wallet after", formatNaira(receipt.balanceAfterKobo)],
+    ["Votes cast", String(receipt.votes)],
+    ["Rate", "1 Point per vote"],
+    ["Points deducted", `${receipt.votes} ${receipt.votes === 1 ? "point" : "points"}`],
+    ["Points balance after", `${receipt.balanceAfterKobo} ${receipt.balanceAfterKobo === 1 ? "point" : "points"}`],
     ["Receipt no.", receipt.receiptNo],
     ["Date", formatDateTime(receipt.createdAt)],
   ];

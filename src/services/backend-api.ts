@@ -403,6 +403,7 @@ export const backendApi: BlogAwardApi = {
     return {
       user,
       balanceKobo: typeof balanceData === "number" ? balanceData : 0,
+      balancePoints: typeof balanceData === "number" ? balanceData : 0,
       votesCast,
       season,
       transactions: (ledgerRows ?? []).map((l) => ({

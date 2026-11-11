@@ -7,7 +7,7 @@ import { BallotStub } from "@/components/artists/ballot-stub";
 import { LinkButton } from "@/components/ui/button";
 import { ErrorBlock, LoadingBlock } from "@/components/ui/feedback";
 import { useAsync } from "@/hooks/use-async";
-import { formatNaira, formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { api } from "@/services";
 
 import { VotePanel } from "./vote-panel";
@@ -48,7 +48,7 @@ export function NomineeView({ slug }: { slug: string }) {
             // eslint-disable-next-line @next/next/no-img-element -- administrator-supplied image of unknown size
             <img src={artist.imageUrl} alt={`${artist.name}`} className="size-full object-cover" />
           ) : (
-            <BallotStub name={artist.name} category={categoryName} price={formatNaira(season.votePriceKobo)} />
+            <BallotStub name={artist.name} category={categoryName} price="1 Point (₦50)" />
           )}
         </div>
 

@@ -7,7 +7,7 @@ import { cardTones } from "@/components/artists/tones";
 import { LinkButton } from "@/components/ui/button";
 import { Avatar, ErrorBlock, LoadingBlock, Notice } from "@/components/ui/feedback";
 import { useAsync } from "@/hooks/use-async";
-import { formatDate, formatNaira, formatNumber, formatSignedNaira, initials, pluralise } from "@/lib/format";
+import { formatDate, formatNumber, initials, pluralise } from "@/lib/format";
 import { api } from "@/services";
 import type { LedgerEntry } from "@/types/domain";
 
@@ -58,14 +58,19 @@ export function DashboardView() {
       <div className="grid gap-1.5 px-5 md:grid-cols-12 md:items-start md:gap-2 md:px-6">
         <div className="flex min-h-[270px] flex-col justify-between bg-mint p-5 text-on-color md:col-span-5 md:h-[420px] md:p-7">
           <div>
-            <p className="text-xl font-medium md:text-[22px]">Available voting credits</p>
-            <p className="font-display text-[140px] leading-[0.85] tracking-[-0.02em] md:text-[clamp(140px,14.6vw,210px)]">{formatNaira(d.balanceKobo)}</p>
+            <p className="text-xl font-medium md:text-[22px]">Available points balance</p>
+            <p className="font-display text-[140px] leading-[0.85] tracking-[-0.02em] md:text-[clamp(140px,14.6vw,210px)]">
+              {formatNumber(d.balancePoints ?? d.balanceKobo)}
+            </p>
+            <p className="text-xl font-semibold opacity-90">
+              {pluralise(d.balancePoints ?? d.balanceKobo, "Point")}
+            </p>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <LinkButton href="/wallet" size="md">
-              Add credits
+              Fund wallet
             </LinkButton>
-            <p className="text-lg">Credits are for voting only.</p>
+            <p className="text-lg">1 vote = 1 point</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-1.5 md:contents">
@@ -96,7 +101,7 @@ export function DashboardView() {
             Recent wallet transactions
           </h2>
           {d.transactions.length === 0 ? (
-            <p className="text-xl text-muted">No transactions yet. Add credits to get started.</p>
+            <p className="text-xl text-muted">No transactions yet. Fund your wallet to get started.</p>
           ) : (
             <ul className="flex flex-col gap-4">
               {d.transactions.map((entry) => (
@@ -104,7 +109,9 @@ export function DashboardView() {
                   <span className="text-lg text-muted md:w-[70px]">{formatDate(entry.createdAt)}</span>
                   <span className="min-w-0 flex-1 text-xl font-medium">{entry.description}</span>
                   <span className="text-lg md:w-[100px]">{ledgerStatus[entry.type]}</span>
-                  <span className="text-xl font-semibold md:w-[100px] md:text-right">{formatSignedNaira(entry.amountKobo)}</span>
+                  <span className="text-xl font-semibold md:w-[120px] md:text-right">
+                    {entry.amountKobo > 0 ? "+" : ""}{formatNumber(entry.amountKobo)} {Math.abs(entry.amountKobo) === 1 ? "pt" : "pts"}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -126,7 +133,7 @@ export function DashboardView() {
                     <span className="block text-base text-muted">{receipt.categoryName}</span>
                   </Link>
                   <span className="text-lg">
-                    {pluralise(receipt.votes, "vote")} &middot; {formatNaira(receipt.totalKobo)}
+                    {pluralise(receipt.votes, "vote")} &middot; {formatNumber(receipt.votes)} {receipt.votes === 1 ? "point" : "points"}
                   </span>
                   <span className="text-lg text-muted md:w-[60px] md:text-right">{formatDate(receipt.createdAt)}</span>
                 </li>

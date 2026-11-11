@@ -92,10 +92,11 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
     expect(screen.getByLabelText(/Custom number of votes/i)).toBeInTheDocument();
   });
 
-  it("warns about insufficient credits immediately before confirmation when custom votes exceed balance", async () => {
-    // Balance is ₦300 (6 votes max at ₦50/vote)
+  it("warns about insufficient points immediately before confirmation when custom votes exceed balance", async () => {
+    // Balance is 6 points (6 votes max)
     vi.spyOn(api, "getWallet").mockResolvedValue({
-      balanceKobo: 30000, // ₦300
+      balanceKobo: 6,
+      balancePoints: 6,
       season: mockSeason,
       payments: [],
       debits: [],
@@ -115,21 +116,22 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
     });
 
     const customInput = screen.getByLabelText(/Custom number of votes/i);
-    // User types 10 votes (costs ₦500, but wallet only has ₦300)
+    // User types 10 votes (costs 10 points, but wallet only has 6 points)
     fireEvent.change(customInput, { target: { value: "10" } });
 
     // Warning appears immediately
-    expect(screen.getByText("Not enough credits.")).toBeInTheDocument();
-    expect(screen.getByText(/insufficient by ₦200/i)).toBeInTheDocument();
+    expect(screen.getByText("Not enough points.")).toBeInTheDocument();
+    expect(screen.getByText(/wallet only has 6 points/i)).toBeInTheDocument();
 
     // The vote button is replaced/hidden while insufficient
-    expect(screen.queryByRole("button", { name: /^Vote for ₦500/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Vote with 10 Points/i })).not.toBeInTheDocument();
   });
 
   it("enables confirmation and approves vote when custom number tallies with available credits", async () => {
-    // Balance is ₦400 (8 votes max at ₦50/vote)
+    // Balance is 8 points
     vi.spyOn(api, "getWallet").mockResolvedValue({
-      balanceKobo: 40000, // ₦400
+      balanceKobo: 8,
+      balancePoints: 8,
       season: mockSeason,
       payments: [],
       debits: [],
@@ -145,8 +147,8 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
       categoryName: "Best Vocal Performance",
       votes: 7,
       priceKobo: 5000,
-      totalKobo: 35000,
-      balanceAfterKobo: 5000,
+      totalKobo: 7,
+      balanceAfterKobo: 1,
       createdAt: "2026-03-01T12:00:00Z",
     });
 
@@ -164,14 +166,14 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
     });
 
     const customInput = screen.getByLabelText(/Custom number of votes/i);
-    // User types 7 votes (7 * ₦50 = ₦350 <= ₦400 balance)
+    // User types 7 votes (7 points <= 8 balance)
     fireEvent.change(customInput, { target: { value: "7" } });
 
     // Insufficient warning is NOT present
-    expect(screen.queryByText("Not enough credits.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Not enough points.")).not.toBeInTheDocument();
 
-    // Vote button is enabled for ₦350
-    const voteBtn = screen.getByRole("button", { name: "Vote for ₦350" });
+    // Vote button is enabled for 7 Points
+    const voteBtn = screen.getByRole("button", { name: "Vote with 7 Points" });
     expect(voteBtn).toBeInTheDocument();
 
     // Click Vote button to open confirmation dialog
@@ -180,7 +182,7 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
     // Dialog appears with breakdown
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Confirm your vote")).toBeInTheDocument();
-    expect(within(dialog).getByText("7 votes × ₦50")).toBeInTheDocument();
+    expect(within(dialog).getByText("7 Points")).toBeInTheDocument();
 
     // Confirm vote
     const confirmBtn = within(dialog).getByRole("button", { name: "Confirm and vote" });
@@ -196,9 +198,10 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
   });
 
   it("allows setting max affordable votes when balance is exceeded", async () => {
-    // Balance is ₦350 (7 votes max at ₦50/vote)
+    // Balance is 7 points
     vi.spyOn(api, "getWallet").mockResolvedValue({
-      balanceKobo: 35000, // ₦350
+      balanceKobo: 7,
+      balancePoints: 7,
       season: mockSeason,
       payments: [],
       debits: [],
@@ -217,18 +220,18 @@ describe("VotePanel Custom Voting & Credit Tallying", () => {
       expect(screen.getByText("Cast your votes")).toBeInTheDocument();
     });
 
-    // Preset 10 exceeds balance (₦500 > ₦350)
+    // Preset 10 exceeds balance (10 > 7)
     const tenVotesBtn = screen.getByRole("button", { name: /^10votes/i });
     fireEvent.click(tenVotesBtn);
 
-    expect(screen.getByText("Not enough credits.")).toBeInTheDocument();
+    expect(screen.getByText("Not enough points.")).toBeInTheDocument();
 
     // "Use max affordable (7 votes)" button is provided
     const maxBtn = screen.getByRole("button", { name: /Use max affordable \(7 votes\)/i });
     fireEvent.click(maxBtn);
 
     // After clicking, credits tally and warning clears
-    expect(screen.queryByText("Not enough credits.")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vote for ₦350" })).toBeInTheDocument();
+    expect(screen.queryByText("Not enough points.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vote with 7 Points" })).toBeInTheDocument();
   });
 });

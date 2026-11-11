@@ -11,7 +11,7 @@ import { useSession } from "@/hooks/session";
 import { useAsync } from "@/hooks/use-async";
 import { VOTE_COUNT_CHOICES } from "@/lib/constants";
 import { errorMessage } from "@/lib/error-message";
-import { formatNaira } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { api, ApiError } from "@/services";
 import type { Artist, Season } from "@/types/domain";
 
@@ -102,7 +102,7 @@ export function VotePanel({ artist, categoryName, season, onSeasonChange }: { ar
 function CastPanel({
   artist,
   categoryName,
-  season,
+  season: _season,
   onSeasonChange,
   onSignedOut,
   onDone,
@@ -127,7 +127,7 @@ function CastPanel({
   if (state.status === "loading") return <LoadingBlock label="Loading your wallet" />;
   if (state.status === "error") return <ErrorBlock error={state.error} onRetry={reload} />;
 
-  const balance = state.data.balanceKobo;
+  const balance = state.data.balancePoints ?? state.data.balanceKobo;
 
   function handleCustomInput(raw: string) {
     setCustomText(raw);
@@ -170,10 +170,10 @@ function CastPanel({
 
   const hasInvalidCustom = mode === "custom" && customError !== null;
   const effectiveVotes = hasInvalidCustom ? 0 : votes;
-  const total = effectiveVotes * season.votePriceKobo;
-  const enough = balance >= total && effectiveVotes > 0;
-  const maxAffordableVotes = Math.min(100, Math.floor(balance / season.votePriceKobo));
-  const affordablePreset = [...VOTE_COUNT_CHOICES].reverse().find((n) => n * season.votePriceKobo <= balance);
+  const pointsCost = effectiveVotes; // 1 vote = 1 point
+  const enough = balance >= pointsCost && effectiveVotes > 0;
+  const maxAffordableVotes = Math.min(100, Math.max(0, balance));
+  const affordablePreset = [...VOTE_COUNT_CHOICES].reverse().find((n) => n <= balance);
 
   function chooseFewerVotes() {
     if (affordablePreset) {
@@ -267,20 +267,20 @@ function CastPanel({
           handleCustomInput(event.target.value);
         }}
         error={mode === "custom" && customError ? customError : undefined}
-        hint={`Cast between 1 and 100 votes per transaction. Cost is ${formatNaira(season.votePriceKobo)} per vote.`}
+        hint="Cast between 1 and 100 votes per transaction. Cost is 1 Point (₦50) per vote."
       />
 
       <div className="flex flex-col gap-2">
         {effectiveVotes > 0 ? (
           <Line
-            label={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`}
-            value={formatNaira(total)}
+            label={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"} \u00d7 1 pt`}
+            value={`${pointsCost} ${pointsCost === 1 ? "Point" : "Points"}`}
           />
         ) : (
-          <Line label="Cost per vote" value={formatNaira(season.votePriceKobo)} />
+          <Line label="Cost per vote" value="1 Point (₦50)" />
         )}
-        <Line label="Wallet balance now" value={formatNaira(balance)} muted />
-        {enough ? <Line label="Balance after voting" value={formatNaira(balance - total)} /> : null}
+        <Line label="Wallet points balance" value={`${formatNumber(balance)} ${balance === 1 ? "Point" : "Points"}`} muted />
+        {enough ? <Line label="Balance after voting" value={`${formatNumber(balance - pointsCost)} ${balance - pointsCost === 1 ? "Point" : "Points"}`} /> : null}
       </div>
 
       {hasInvalidCustom ? (
@@ -290,11 +290,11 @@ function CastPanel({
       ) : !enough ? (
         <StatusPanel
           tone="orange"
-          headline="Not enough credits."
+          headline="Not enough points."
           actions={
             <>
               <LinkButton href="/wallet" size="md" full>
-                Add credits
+                Fund points
               </LinkButton>
               {affordablePreset || maxAffordableVotes > 0 ? (
                 <Button tone="ground" full onClick={chooseFewerVotes}>
@@ -309,25 +309,26 @@ function CastPanel({
             </>
           }
         >
-          You need {formatNaira(total)} for {effectiveVotes} {effectiveVotes === 1 ? "vote" : "votes"} but your wallet has {formatNaira(balance)}. It will be insufficient by {formatNaira(total - balance)}. Add {formatNaira(total - balance)} or more
-          {maxAffordableVotes > 0 ? ", or choose a number that tallies with your balance" : ""}.
+          You need {pointsCost} {pointsCost === 1 ? "point" : "points"} for {effectiveVotes} {effectiveVotes === 1 ? "vote" : "votes"} but your wallet only has {formatNumber(balance)} {balance === 1 ? "point" : "points"}.
+          {maxAffordableVotes > 0 ? " Choose a number that tallies with your balance, or fund your wallet." : " Please fund your wallet to continue."}
         </StatusPanel>
       ) : (
         <Button size="lg" full onClick={() => setConfirming(true)}>
-          Vote for {formatNaira(total)}
+          Vote with {pointsCost} {pointsCost === 1 ? "Point" : "Points"}
         </Button>
       )}
 
       <p className="text-base leading-[1.4] text-muted">
-        Votes are final once confirmed. The cost is taken from your wallet, and you can only vote while voting is open.
+        Votes are final once confirmed. Points are deducted immediately from your wallet, and you can only vote while voting is open.
       </p>
 
       <Dialog open={confirming} onClose={() => setConfirming(false)} title="Confirm your vote">
         <div className="flex flex-col gap-2.5">
           <Line label="Artist" value={artist.name} />
           <Line label="Category" value={categoryName} />
-          <Line label={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"} \u00d7 ${formatNaira(season.votePriceKobo)}`} value={formatNaira(total)} />
-          <Line label="Balance after voting" value={formatNaira(balance - total)} />
+          <Line label="Votes to cast" value={`${effectiveVotes} ${effectiveVotes === 1 ? "vote" : "votes"}`} />
+          <Line label="Points to deduct" value={`${pointsCost} ${pointsCost === 1 ? "Point" : "Points"}`} />
+          <Line label="Balance after voting" value={`${formatNumber(balance - pointsCost)} ${balance - pointsCost === 1 ? "Point" : "Points"}`} />
         </div>
         {problem ? <Notice>{problem}</Notice> : null}
         <div className="flex flex-col gap-2 sm:flex-row">
